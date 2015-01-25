@@ -17,7 +17,7 @@ int drawingMemory[ledsPerStrip*6];
 const int config = WS2811_GRB | WS2811_800kHz;
 OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
 
-const int FRAME_TIME = 17;
+const int FRAME_TIME = 100;
 elapsedMillis elapsed;
 elapsedMillis timeSinceDraw;
 
@@ -34,6 +34,7 @@ typedef struct dot {
 
 const int MAX_DOTS = 20;
 int numDots = 2;
+
 dot dots[MAX_DOTS];
 // indicator for whether each neighboring pair of dots has collided in a given
 // frame. buffered on either side by zeros.
@@ -62,7 +63,7 @@ void make_dots() {
     dots[i].position = random(60);
     dots[i].velocity = random(-30, 30);
     dots[i].mass = random(10);
-    dots[i].radius = ;
+    dots[i].radius = .5;//random(2.5);
     dots[i].colorInd = (int) random(180);
   }
   */
@@ -114,9 +115,19 @@ void tick() {
   }
 
   // check for collision between each pair of dots
-  for (int i = 0; i < numDots - 1; i++) {
+  boolean c = false;
+  for (int i = 1; i < numDots; i++) {
+    if ((dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius)){
+      c = true;      
+    }
+
     collide[i+1] = (dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius);
   }
+  
+  if (c){
+        setColor(50,50,50, true);
+  }
+
 
   float newVel[numDots];
 
@@ -175,20 +186,32 @@ void loop() {
 
   // physics simulating
   tick();
+  
+  delay(10);
+}
+
+void setColor(int r, int g, int b, boolean show){
+  for (int i = 0; i < ledsPerStrip; i++) {    
+    leds.setPixel(i, r, g, b);    
+  }   
+  
+  if (show){
+        leds.show();
+  }
 }
 
 void draw() {
+  setColor(0,0,0, false);
   int color;
   int pixel;
-  for (int i = 0; i < ledsPerStrip; i++) {    
-    leds.setPixel(pixel, 0,0,0);
-  } 
-  
   for (int i = 0; i < numDots; i++) {    
     color = rainbowColors[dots[i].colorInd];
     pixel = (int) dots[i].position;
     leds.setPixel(pixel, color);
   } 
+
+//  leds.setPixel((int) dots[0].position, 50,50,50);
+//    leds.setPixel((int) dots[1].position, 50,50,50);
 
   if(!leds.busy()){
     leds.show();
