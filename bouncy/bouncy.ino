@@ -33,21 +33,40 @@ typedef struct dot {
 } dot;
 
 const int MAX_DOTS = 20;
-int numDots = 5;
-dot dots[numDots];
+int numDots = 2;
+dot dots[MAX_DOTS];
 // indicator for whether each neighboring pair of dots has collided in a given
 // frame. buffered on either side by zeros.
 bool collide[MAX_DOTS+1];
 
 void make_dots() {
+  dots[0] = {
+    position = 20;
+    velocity = 15;
+    mass = 1;
+    radius = 0.5;
+    colorInd = (int)random(180);
+  }
+
+  dots[1] = {
+    position = 40;
+    velocity = -10;
+    mass = 2;
+    radius = 0.5;
+    colorInd = (int)random(180);
+  }
+
+  /*
   for (int i = 0; i < numDots; i++) {
     // create dot with random values
     dots[i].position = random(60);
     dots[i].velocity = random(-30, 30);
     dots[i].mass = random(10);
-    dots[i].radius = random(2.5);
+    dots[i].radius = ;
     dots[i].colorInd = (int) random(180);
   }
+  */
+
   collide[0] = false;
   collide[numDots] = false;
 }
