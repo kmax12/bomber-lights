@@ -33,7 +33,11 @@ typedef struct dot {
 } dot;
 
 const int MAX_DOTS = 20;
+<<<<<<< Updated upstream
 int numDots = 2;
+=======
+int numDots = 1;
+>>>>>>> Stashed changes
 dot dots[MAX_DOTS];
 // indicator for whether each neighboring pair of dots has collided in a given
 // frame. buffered on either side by zeros.
@@ -62,7 +66,11 @@ void make_dots() {
     dots[i].position = random(60);
     dots[i].velocity = random(-30, 30);
     dots[i].mass = random(10);
+<<<<<<< Updated upstream
     dots[i].radius = ;
+=======
+    dots[i].radius = .5;//random(2.5);
+>>>>>>> Stashed changes
     dots[i].colorInd = (int) random(180);
   }
   */
@@ -172,7 +180,7 @@ void draw() {
   for (int i = 0; i < ledsPerStrip; i++) {    
     leds.setPixel(pixel, 0,0,0);
   } 
-  
+  leds.setPixel(10, 255,255,255);
   for (int i = 0; i < numDots; i++) {    
     color = rainbowColors[dots[i].colorInd];
     pixel = (int) dots[i].position;
