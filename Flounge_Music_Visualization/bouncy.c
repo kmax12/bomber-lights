@@ -29,6 +29,7 @@ typedef struct dot {
   float velocity;
   float mass;
   float radius;
+  int colorInd;
 } dot;
 
 const int MAX_DOTS = 20;
@@ -45,6 +46,7 @@ void make_dots() {
     dots[i]->velocity = random(-30, 30);
     dots[i]->mass = random(10);
     dots[i]->radius = random(2.5);
+    dots[i]->color = (int) random(180);
   }
   collide[0] = false;
   collide[MAX_DOTS] = false;
@@ -131,14 +133,29 @@ void tick() {
   elapsed = 0;
 }
 
-void loop()
-{
+void loop() {
   if (timeSinceDraw > FRAME_TIME) {
     draw();
     timeSinceDraw = 0;
   }
 
   tick();
+}
+
+void draw() {
+  int color;
+  int pixel;
+  for (i = 0; i < MAX_DOTS; i++) {    
+    color = rainbowColors[dots[i]->color];
+    pixel = (int) dots[i]-->position;
+    leds.setPixel(pixel, color)
+    
+  } 
+
+  if(!leds.busy()){
+    leds.show();
+  }
+
 }
 
 int makeColor(unsigned int hue, unsigned int saturation, unsigned int lightness)
