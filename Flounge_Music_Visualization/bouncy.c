@@ -49,6 +49,7 @@ typedef struct dot {
   float velocity;
   float mass;
   float radius;
+  int colorInd;
 } dot;
 
 const int MAX_DOTS = 20;
@@ -65,6 +66,7 @@ void make_dots() {
     dots[i]->velocity = random(-30, 30);
     dots[i]->mass = random(10);
     dots[i]->radius = random(2.5);
+    dots[i]->color = (int) random(180);
   }
   collide[0] = false;
   collide[MAX_DOTS] = false;
@@ -128,70 +130,21 @@ void loop()
   }
 
   elapsed = 0;
+}
 
-  /*
-  Serial.print(a);
-   Serial.print(" ");
-   Serial.print(b);
-   Serial.print(" ");
-   Serial.print(c);
-   Serial.println();
-   */
-
-  if(fft1024_1.available())
-    //if(!leds.busy())
-  {
-    // each time new FFT data is available
-    // print it all to the Arduino Serial Monitor
-    for (i = 0; i < 60; i++) {      
-      l = fft1024_1.read(i) * 1000;
-      //r = fft1024_2.read(i) * 1000;
-      //n = random(0, 255);
-      
-      map(l, 0, 150, 0, 255);
-
-      //map(r, 0, 150, 0, 255);
-      //Serial.print("a");
-      //Serial.print(i);
-      //Serial.println();
-
-      //leds.setPixel(i, l, 0, 0);
-
-      /*
-      if(a > i & a - 5 < i)
-       {
-       leds.setPixel(i, color);
-       }
-       else
-       {
-         leds.setPixel(i, 0, 0, l);
-       }
-       */
-       
-       /*
-       map(l, 0, 255, 0, 179);
-       c = (int) l;
-       if(0 > c)
-       {
-         c = 0;
-       }
-       if(180 < c)
-       {
-         c = 179;
-       }
-       //Serial.println(rainbowColors[c]);
-       leds.setPixel(i, rainbowColors[c]);
-       */
-       
-      leds.setPixel(i, 0, 0, l);
-    }
-
-  }
+void draw(){
+  int color;
+  int pixel;
+  for (i = 0; i < MAX_DOTS; i++) {    
+    color = rainbowColors[dots[i]->color];
+    pixel = (int) dots[i]-->position;
+    leds.setPixel(pixel, color)
+    
+  } 
 
   if(!leds.busy()){
     leds.show();
   }
-
 
 }
 
