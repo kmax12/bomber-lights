@@ -1,18 +1,34 @@
-#include "bouncy.h"
+#include <Audio.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
+#include <OctoWS2811.h>
+#include "dots.h"
+#include "colors.h"
+
+#define LEDS_PER_STRIP 60
+
+AudioInputAnalog         adc1(A4);           //xy=185,156
+//AudioInputAnalog         adc2(A5);           //xy=203,271
+AudioAnalyzeFFT1024      fft1024_1;      //xy=376,162
+//AudioAnalyzeFFT1024      fft1024_2;      //xy=409,279
+AudioConnection          patchCord1(adc1, fft1024_1);
+//AudioConnection          patchCord2(adc2, fft1024_2);
+
+DMAMEM int display_memory[LEDS_PER_STRIP*6];
+int drawing_memory[LEDS_PER_STRIP*6];
+const int config = WS2811_GRB | WS2811_800kHz;
+OctoWS2811 leds(LEDS_PER_STRIP, display_memory, drawing_memory, config);
+
+elapsedMillis elapsed_millis;
+
+bool first = true;
 
 void setup()
 {
   Serial.begin(9600);
-  
-  // generate rainbow colors
-  for (int i = 0; i < 180; i++) {
-    int hue = i * 2;
-    int saturation = 100;
-    int lightness = 5;
-    // pre-compute the 180 rainbow colors
-    rainbowColors[i] = make_color(hue, saturation, lightness);
-  }
 
+  make_colors();
   make_dots();
   
   AudioMemory(24);
@@ -30,53 +46,34 @@ void loop() {
   // physics simulating
   simulate_dots((float)elapsed_millis / 1000.0);
   
-  // drawing
-  draw_dots((float)elapsed_millis / 1000.0);
+  // check if it's time to draw yet
+  time_since_draw += elapsed;
+  if (time_since_draw >= DRAW_FRAME_TIME) {
+    time_since_draw -= DRAW_FRAME_TIME;
+
+    // clear the board
+    set_color(0,0,0, false);
+
+    // render dots
+    draw_dots(leds);
+
+    // flush to the led strip
+    if (!leds.busy()) {
+      leds.show();
+    }
+  }
 
   delay(10);
   elapsed_millis = 0;
 }
 
+// Set the whole strip to a single rgb color
 void set_color(int r, int g, int b, boolean show){
-  for (int i = 0; i < ledsPerStrip; i++) {    
+  for (int i = 0; i < LEDS_PER_STRIP; i++) {    
     leds.setPixel(i, r, g, b);    
-  }   
+  } 
   
-  if (show){
+  if (show) {
     leds.show();
   }
-}
-
-int make_color(unsigned int hue, unsigned int saturation, unsigned int lightness)
-{
-	unsigned int red, green, blue;
-	unsigned int var1, var2;
-
-	if (hue > 359) hue = hue % 360;
-	if (saturation > 100) saturation = 100;
-	if (lightness > 100) lightness = 100;
-
-	// algorithm from: http://www.easyrgb.com/index.php?X=MATH&H=19#text19
-	if (saturation == 0) {
-		red = green = blue = lightness * 255 / 100;
-	} else {
-		if (lightness < 50) {
-			var2 = lightness * (100 + saturation);
-		} else {
-			var2 = ((lightness + saturation) * 100) - (saturation * lightness);
-		}
-		var1 = lightness * 200 - var2;
-		red = h2rgb(var1, var2, (hue < 240) ? hue + 120 : hue - 240) * 255 / 600000;
-		green = h2rgb(var1, var2, hue) * 255 / 600000;
-		blue = h2rgb(var1, var2, (hue >= 120) ? hue - 120 : hue + 240) * 255 / 600000;
-	}
-	return (red << 16) | (green << 8) | blue;
-}
-
-unsigned int h2rgb(unsigned int v1, unsigned int v2, unsigned int hue)
-{
-	if (hue < 60) return v1 * 60 + (v2 - v1) * hue;
-	if (hue < 180) return v2 * 60;
-	if (hue < 240) return v1 * 60 + (v2 - v1) * (240 - hue);
-	return v1 * 60;
 }

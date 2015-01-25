@@ -1,8 +1,13 @@
 #include "dots.h"
 
+// initial setup
 void make_dots() {
   // seed C rng
   srand(time(NULL));
+
+  // define stuff
+  num_dots = 2;
+  time_since_draw = 0;
 
   dots[0] = dot(20.0, 15.0, 1.0, 0.5, (int)(rand() * 180));
   dots[1] = dot(40.0, -10.0, 2.0, 0.5, (int)(rand() * 180));
@@ -18,6 +23,7 @@ void make_dots() {
   collide[num_dots] = false;
 }
 
+// called every frame to update the world state
 void simulate_dots(float elapsed) {
   // update position of each dot
   for (int i = 0; i < num_dots; i++) {
@@ -70,7 +76,8 @@ void simulate_dots(float elapsed) {
     } else if (collide[i+1]) {
       dm = dots[i].mass - dots[i+1].mass;
       cm = dots[i].mass + dots[i+1].mass;
-      new_vel[i] -= 2 * dots[i-1].mass * dots[i-1].velocity / cm + (dm * dots[i].velocity) / cm;
+      new_vel[i] -= 2 * dots[i-1].mass * dots[i-1].velocity / cm + 
+                    (dm * dots[i].velocity) / cm;
     }
   }
 
@@ -95,24 +102,14 @@ void simulate_dots(float elapsed) {
   }
 }
 
-void draw_dots(float elapsed) {
-  // check if it's time to draw yet
-  time_since_draw += elapsed;
-  if (time_since_draw < DRAW_FRAME_TIME)
-    return;
-
-  time_since_draw -= DRAW_FRAME_TIME;
-  set_color(0,0,0, false);
+// Given an LED object, render dots to the strip
+void draw_dots(OctoWS2811& leds) {
   int color;
   int pixel;
 
   for (int i = 0; i < num_dots; i++) {    
-    color = rainbowColors[dots[i].colorInd];
+    color = rainbow_colors[dots[i].colorInd];
     pixel = (int) dots[i].position;
     leds.setPixel(pixel, color);
   } 
-
-  if (!leds.busy()) {
-    leds.show();
-  }
 }

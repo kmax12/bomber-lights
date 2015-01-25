@@ -3,8 +3,10 @@
 
 #include <time.h>
 #include <stdlib.h>
+#include "Arduino.h"
+#include <OctoWS2811.h>
+#include "colors.h"
 
-#define LEDS_PER_STRIP 60
 #define DRAW_FRAME_TIME 0.1
 #define MAX_DOTS 20
 #define NUM_COLORS 180
@@ -66,17 +68,17 @@ public:
 };
 
 // current number of active dots
-int num_dots = 2;
+int num_dots;
 
 // time since last draw
-float time_since_draw = 0;
+float time_since_draw;
 
 // active dots array
-dot dots[MAX_DOTS];
+dot[] dots;
 
 // indicator for whether each neighboring pair of dots has collided in a given
 // frame. buffered on either side by zeros.
-bool collide[MAX_DOTS+1];
+bool[] collide;
 
 void make_dots();
 
