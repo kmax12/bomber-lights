@@ -45,8 +45,8 @@ void make_dots() {
     dots[i]->position = random(60);
     dots[i]->velocity = random(-30, 30);
     dots[i]->mass = random(10);
-    dots[i]->radius = random(2.5);
-    dots[i]->color = (int) random(180);
+    dots[i]->radius = random(1.0, 2.5);
+    dots[i]->color = (int)random(180);
   }
   collide[0] = false;
   collide[MAX_DOTS] = false;
