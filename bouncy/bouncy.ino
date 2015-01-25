@@ -40,21 +40,21 @@ dot dots[MAX_DOTS];
 bool collide[MAX_DOTS+1];
 
 void make_dots() {
-  dots[0] = {
-    position = 20;
-    velocity = 15;
-    mass = 1;
-    radius = 0.5;
-    colorInd = (int)random(180);
-  }
+  dots[0] = (dot){
+    20.0,
+    15.0,
+    1.0,
+    0.5,
+    (int)random(180),
+  };
 
-  dots[1] = {
-    position = 40;
-    velocity = -10;
-    mass = 2;
-    radius = 0.5;
-    colorInd = (int)random(180);
-  }
+  dots[1] = (dot){
+    40.0,
+    -10.0,
+    2.0,
+    0.5,
+    (int)random(180)
+  };
 
   /*
   for (int i = 0; i < numDots; i++) {
