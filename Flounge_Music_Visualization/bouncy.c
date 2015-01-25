@@ -23,27 +23,7 @@ elapsedMillis timeSinceDraw;
 
 int rainbowColors[180];
 
-void setup()
-{
-  Serial.begin(9600);
-  
-  for (int i=0; i<180; i++) {
-    int hue = i * 2;
-    int saturation = 100;
-    int lightness = 50;
-    // pre-compute the 180 rainbow colors
-    rainbowColors[i] = makeColor(hue, saturation, lightness);
-  }
-  
-  AudioMemory(24);
-  fft1024_1.windowFunction(AudioWindowHanning1024);
-  //fft1024_2.windowFunction(AudioWindowHanning1024);
-  leds.begin();
-}
-
-int colorInd = 0;
-int color = rainbowColors[colorInd];
-
+// dot stuff
 typedef struct dot {
   float position;
   float velocity;
@@ -70,20 +50,41 @@ void make_dots() {
   collide[MAX_DOTS] = false;
 }
 
-void loop()
+void setup()
 {
-  float l; 
-  float r;
-  int i;
-  int c;
+  Serial.begin(9600);
   
-  if (timeSinceDraw > FRAME_TIME) {
-    draw();
+  for (int i=0; i<180; i++) {
+    int hue = i * 2;
+    int saturation = 100;
+    int lightness = 50;
+    // pre-compute the 180 rainbow colors
+    rainbowColors[i] = makeColor(hue, saturation, lightness);
   }
 
+  make_dots();
+  
+  AudioMemory(24);
+  fft1024_1.windowFunction(AudioWindowHanning1024);
+  //fft1024_2.windowFunction(AudioWindowHanning1024);
+  leds.begin();
+}
+
+int colorInd = 0;
+int color = rainbowColors[colorInd];
+
+void tick() {
   // update position of each dot
   for (int i = 0; i < numDots; i++) {
     dots[i].position += dots[i].velocity * elapsed;
+  }
+
+  // check for walls
+  if (WALL) {
+    if (dots[0].position - dots[0].radius < LEFT && dots[0].velocity < 0)
+      dots[0].velocity *= -1;
+    if (dots[numDots-1].position + dots[numDots-1].radius < RIGHT && dots[numDots-1].velocity > 0)
+      dots[0].velocity *= -1;
   }
 
   // check for collision between each pair of dots
@@ -91,7 +92,7 @@ void loop()
     collide[i+1] = dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius;
   }
 
-  int newVel[numDots];
+  float newVel[numDots];
 
   // apply collisions to velocity of each dot
   for (int i = 0; i < numDots; i++) {
@@ -128,71 +129,16 @@ void loop()
   }
 
   elapsed = 0;
+}
 
-  /*
-  Serial.print(a);
-   Serial.print(" ");
-   Serial.print(b);
-   Serial.print(" ");
-   Serial.print(c);
-   Serial.println();
-   */
-
-  if(fft1024_1.available())
-    //if(!leds.busy())
-  {
-    // each time new FFT data is available
-    // print it all to the Arduino Serial Monitor
-    for (i = 0; i < 60; i++) {      
-      l = fft1024_1.read(i) * 1000;
-      //r = fft1024_2.read(i) * 1000;
-      //n = random(0, 255);
-      
-      map(l, 0, 150, 0, 255);
-
-      //map(r, 0, 150, 0, 255);
-      //Serial.print("a");
-      //Serial.print(i);
-      //Serial.println();
-
-      //leds.setPixel(i, l, 0, 0);
-
-      /*
-      if(a > i & a - 5 < i)
-       {
-       leds.setPixel(i, color);
-       }
-       else
-       {
-         leds.setPixel(i, 0, 0, l);
-       }
-       */
-       
-       /*
-       map(l, 0, 255, 0, 179);
-       c = (int) l;
-       if(0 > c)
-       {
-         c = 0;
-       }
-       if(180 < c)
-       {
-         c = 179;
-       }
-       //Serial.println(rainbowColors[c]);
-       leds.setPixel(i, rainbowColors[c]);
-       */
-       
-      leds.setPixel(i, 0, 0, l);
-    }
-
+void loop()
+{
+  if (timeSinceDraw > FRAME_TIME) {
+    draw();
+    timeSinceDraw = 0;
   }
 
-  if(!leds.busy()){
-    leds.show();
-  }
-
-
+  tick();
 }
 
 int makeColor(unsigned int hue, unsigned int saturation, unsigned int lightness)
@@ -228,10 +174,3 @@ unsigned int h2rgb(unsigned int v1, unsigned int v2, unsigned int hue)
 	if (hue < 240) return v1 * 60 + (v2 - v1) * (240 - hue);
 	return v1 * 60;
 }
-
-
-
-
-
-
-
