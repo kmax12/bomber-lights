@@ -28,9 +28,10 @@ CRGB leds[NUM_LEDS];
 
 void setup() {
   delay(2000);                               // sanity check delay - allows reprogramming if accidently blowing power w/leds
-  FastLED.addLeds<CHIPSET, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);
+  FastLED.addLeds<CHIPSET, DATA_PIN>(leds, NUM_LEDS);
   LEDS.setBrightness(BRIGHTNESS);
-  Serial.begin(115200);
+  Serial.begin(9600);
+  Serial.print("fuuuuck");
   for (int i = 0 ; i < NUM_BALLS ; i++) {    // Initialize variables
     tLast[i] = millis();
     h[i] = h0;

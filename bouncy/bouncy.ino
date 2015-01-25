@@ -18,7 +18,7 @@ const int config = WS2811_GRB | WS2811_800kHz;
 OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
 
 const int FRAME_TIME = 17;
-elapsedMillis delta;
+elapsedMillis elapsed;
 elapsedMillis timeSinceDraw;
 
 int rainbowColors[180];
@@ -42,11 +42,11 @@ bool collide[MAX_DOTS+1];
 void make_dots() {
   for (int i = 0; i < numDots; i++) {
     // create dot with random values
-    dots[i]->position = random(60);
-    dots[i]->velocity = random(-30, 30);
-    dots[i]->mass = random(10);
-    dots[i]->radius = random(2.5);
-    dots[i]->color = (int) random(180);
+    dots[i].position = random(60);
+    dots[i].velocity = random(-30, 30);
+    dots[i].mass = random(10);
+    dots[i].radius = random(2.5);
+    dots[i].colorInd = (int) random(180);
   }
   collide[0] = false;
   collide[MAX_DOTS] = false;
@@ -59,7 +59,7 @@ void setup()
   for (int i=0; i<180; i++) {
     int hue = i * 2;
     int saturation = 100;
-    int lightness = 50;
+    int lightness = 5;
     // pre-compute the 180 rainbow colors
     rainbowColors[i] = makeColor(hue, saturation, lightness);
   }
@@ -74,11 +74,13 @@ void setup()
 
 int colorInd = 0;
 int color = rainbowColors[colorInd];
-
+const bool WALL = true;
+const int LEFT = 0;
+const int RIGHT = ledsPerStrip;
 void tick() {
   // update position of each dot
   for (int i = 0; i < numDots; i++) {
-    dots[i].position += dots[i].velocity * elapsed;
+    dots[i].position += dots[i].velocity * elapsed/1000.0;
   }
 
   // check for walls
@@ -145,10 +147,15 @@ void loop() {
 void draw() {
   int color;
   int pixel;
-  for (i = 0; i < MAX_DOTS; i++) {    
-    color = rainbowColors[dots[i]->color];
-    pixel = (int) dots[i]-->position;
-    leds.setPixel(pixel, color)
+  for (int i = 0; i < ledsPerStrip; i++) {    
+    leds.setPixel(pixel, 0,0,0);
+    
+  } 
+  
+  for (int i = 0; i < MAX_DOTS; i++) {    
+    color = rainbowColors[dots[i].colorInd];
+    pixel = (int) dots[i].position;
+    leds.setPixel(pixel, color);
     
   } 
 
