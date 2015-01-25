@@ -67,6 +67,7 @@ void make_dots() {
   }
   */
 
+  for (int i = 1; i < numDots; i++) {
   collide[0] = false;
   collide[numDots] = false;
 }
@@ -99,7 +100,9 @@ const int RIGHT = ledsPerStrip;
 void tick() {
   // update position of each dot
   for (int i = 0; i < numDots; i++) {
-    dots[i].position += dots[i].velocity * elapsed/1000.0;
+    if (i > 0 && dots[i] < dots[i-1])
+      flashColor
+    dots[i].position += dots[i].velocity * (float)elapsed/1000.0;
   }
 
   // check for walls
@@ -111,7 +114,7 @@ void tick() {
   }
 
   // check for collision between each pair of dots
-  for (int i = 1; i < numDots - 1; i++) {
+  for (int i = 0; i < numDots - 1; i++) {
     collide[i+1] = (dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius);
   }
 
@@ -119,23 +122,23 @@ void tick() {
 
   // apply collisions to velocity of each dot
   float dm, cm;
-  for (int i = 0; i < numDots; i++) {
+  for (int i = 1; i < numDots; i++) {
     newVel[i] = dots[i].velocity;
     if (collide[i] && collide[i+1]) {
       newVel[i] = 0;
     } else if (collide[i]) {
       dm = dots[i-1].mass - dots[i].mass;
       cm = dots[i-1].mass + dots[i].mass;
-      newVel[i] = 2 * dots[i-1].mass * dots[i-1].velocity / cm - (dm * dots[i].velocity) / cm;
+      newVel[i] -= 2 * dots[i-1].mass * dots[i-1].velocity / cm - (dm * dots[i].velocity) / cm;
     } else if (collide[i+1]) {
       dm = dots[i].mass - dots[i+1].mass;
       cm = dots[i].mass + dots[i+1].mass;
-      newVel[i] = 2 * dots[i-1].mass * dots[i-1].velocity / cm + (dm * dots[i].velocity) / cm;
-    } 
+      newVel[i] -= 2 * dots[i-1].mass * dots[i-1].velocity / cm + (dm * dots[i].velocity) / cm;
+    }
   }
 
   // check for special case
-  for (int i = 0; i < numDots; i++) {
+  for (int i = 1; i < numDots; i++) {
     // For a 3-way collision, the squished ball's velocity has to make the old
     // momenta add up
     if (newVel[i] == 0) {
@@ -157,10 +160,17 @@ void tick() {
   elapsed = 0;
 }
 
+bool first = true;
+
 void loop() {
   if (timeSinceDraw > FRAME_TIME) {
     draw();
     timeSinceDraw = 0;
+  }
+
+  if (first) {
+    first = false;
+    elapsed = 0;
   }
 
   // physics simulating
