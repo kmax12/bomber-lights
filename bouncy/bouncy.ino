@@ -34,7 +34,7 @@ typedef struct dot {
 
 const int MAX_DOTS = 20;
 int numDots = 5;
-dot dots[MAX_DOTS];
+dot dots[numDots];
 // indicator for whether each neighboring pair of dots has collided in a given
 // frame. buffered on either side by zeros.
 bool collide[MAX_DOTS+1];
@@ -49,7 +49,7 @@ void make_dots() {
     dots[i].colorInd = (int) random(180);
   }
   collide[0] = false;
-  collide[MAX_DOTS] = false;
+  collide[numDots] = false;
 }
 
 void setup()
@@ -93,23 +93,24 @@ void tick() {
 
   // check for collision between each pair of dots
   for (int i = 1; i < numDots - 1; i++) {
-    collide[i+1] = dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius;
+    collide[i+1] = (dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius);
   }
 
   float newVel[numDots];
 
   // apply collisions to velocity of each dot
+  float dm, cm;
   for (int i = 0; i < numDots; i++) {
     if (collide[i] && collide[i+1]) {
       newVel[i] = 0;
     } else if (collide[i]) {
-      float dm = dots[i-1].mass - dots[i].mass;
-      float cm = dots[i-1].mass + dots[i].mass;
+      dm = dots[i-1].mass - dots[i].mass;
+      cm = dots[i-1].mass + dots[i].mass;
       newVel[i] = 2 * dots[i-1].mass * dots[i-1].velocity / cm - (dm * dots[i].velocity) / cm;
     } else if (collide[i+1]) {
-      float dm = dots[i].mass - dots[i+1].mass;
-      float cm = dots[i].mass + dots[i+1].mass;
-      newVel[i] = 2 * dots[i-1].mass * dots[i-1].velocity / cm - (dm * dots[i].velocity) / cm;
+      dm = dots[i].mass - dots[i+1].mass;
+      cm = dots[i].mass + dots[i+1].mass;
+      newVel[i] = 2 * dots[i-1].mass * dots[i-1].velocity / cm + (dm * dots[i].velocity) / cm;
     } 
   }
 
@@ -119,11 +120,12 @@ void tick() {
     // momenta add up
     if (newVel[i] == 0) {
       newVel[i] = (
-          dots[i-1].velocity * dots[i-1].mass + 
-          dots[i].velocity * dots[i].mass + 
-          dots[i+1].velocity * dots[i+1].mass -
-          newVel[i-1] * dots[i-1].mass - 
-          newVel[i+1] * dots[i+1].mass) / dots[i].mass;
+          dots[i-1].velocity * dots[i-1].mass +  // left old momentum
+          dots[i].velocity * dots[i].mass +      // my old momentum
+          dots[i+1].velocity * dots[i+1].mass -  // right old momentum
+          newVel[i-1] * dots[i-1].mass -         // left new momentum
+          newVel[i+1] * dots[i+1].mass) /        // right new momentum
+            dots[i].mass;
     }
   }
 
@@ -141,6 +143,7 @@ void loop() {
     timeSinceDraw = 0;
   }
 
+  // physics simulating
   tick();
 }
 
@@ -149,14 +152,12 @@ void draw() {
   int pixel;
   for (int i = 0; i < ledsPerStrip; i++) {    
     leds.setPixel(pixel, 0,0,0);
-    
   } 
   
-  for (int i = 0; i < MAX_DOTS; i++) {    
+  for (int i = 0; i < numDots; i++) {    
     color = rainbowColors[dots[i].colorInd];
     pixel = (int) dots[i].position;
     leds.setPixel(pixel, color);
-    
   } 
 
   if(!leds.busy()){
