@@ -1,6 +1,9 @@
 #ifndef DOTS_H
 #define DOTS_H
 
+#include <time.h>
+#include <stdlib.h>
+
 #define LEDS_PER_STRIP 60
 #define DRAW_FRAME_TIME 0.1
 #define MAX_DOTS 20
@@ -13,12 +16,14 @@
 #define MIN_RAD 2
 #define MAX_RAD 2
 
+#define RANDOM(X, Y) (rand() * ((Y) - (X)) + (X))
+
 #define LEFT 0
 #define RIGHT 60
 #define WALL 1
 
 static inline int random_sign() {
-  if (random(2) > 1) {
+  if (rand() * 2 > 1) {
     return 1;
   } else {
     return -1;
@@ -36,11 +41,11 @@ public:
   int colorInd;
 
   dot() {
-    position = random(LEFT, RIGHT);
-    velocity = random(MIN_VEL, MAX_VEL) * random_sign();
-    mass = random(MIN_MASS, MAX_MASS);
-    radius = random(MIN_RAD, MAX_RAD);
-    colorInd = (int)random(NUM_COLORS);
+    position = RANDOM(LEFT, RIGHT);
+    velocity = RANDOM(MIN_VEL, MAX_VEL) * random_sign();
+    mass = RANDOM(MIN_MASS, MAX_MASS);
+    radius = RANDOM(MIN_RAD, MAX_RAD);
+    colorInd = (int)(rand() * NUM_COLORS);
   }
 
   dot(float p, float v, float m, float r) {
@@ -48,7 +53,7 @@ public:
     velocity = v;
     mass = m;
     radius = r;
-    colorInd = (int)random(NUM_COLORS);
+    colorInd = (int)(rand() * NUM_COLORS);
   }
 
   dot(float p, float v, float m, float r, int c) {

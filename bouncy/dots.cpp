@@ -1,8 +1,11 @@
 #include "dots.h"
 
 void make_dots() {
-  dots[0] = dot(20.0, 15.0, 1.0, 0.5, (int)random(180));
-  dots[1] = dot(40.0, -10.0, 2.0, 0.5, (int)random(180));
+  // seed C rng
+  srand(time(NULL));
+
+  dots[0] = dot(20.0, 15.0, 1.0, 0.5, (int)(rand() * 180));
+  dots[1] = dot(40.0, -10.0, 2.0, 0.5, (int)(rand() * 180));
 
   /*
   for (int i = 0; i < num_dots; i++) {
