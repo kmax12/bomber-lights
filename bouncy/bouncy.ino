@@ -1,225 +1,53 @@
-#include <Audio.h>
-#include <Wire.h>
-#include <SPI.h>
-#include <SD.h>
-#include <OctoWS2811.h>
-
-AudioInputAnalog         adc1(A4);           //xy=185,156
-//AudioInputAnalog         adc2(A5);           //xy=203,271
-AudioAnalyzeFFT1024      fft1024_1;      //xy=376,162
-//AudioAnalyzeFFT1024      fft1024_2;      //xy=409,279
-AudioConnection          patchCord1(adc1, fft1024_1);
-//AudioConnection          patchCord2(adc2, fft1024_2);
-
-const int ledsPerStrip = 60;
-DMAMEM int displayMemory[ledsPerStrip*6];
-int drawingMemory[ledsPerStrip*6];
-const int config = WS2811_GRB | WS2811_800kHz;
-OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
-
-const int FRAME_TIME = 100;
-elapsedMillis elapsed;
-elapsedMillis timeSinceDraw;
-
-int rainbowColors[180];
-
-// dot stuff
-typedef struct dot {
-  float position;
-  float velocity;
-  float mass;
-  float radius;
-  int colorInd;
-} dot;
-
-const int MAX_DOTS = 20;
-int numDots = 2;
-
-dot dots[MAX_DOTS];
-// indicator for whether each neighboring pair of dots has collided in a given
-// frame. buffered on either side by zeros.
-bool collide[MAX_DOTS+1];
-
-void make_dots() {
-  dots[0] = (dot){
-    20.0,
-    15.0,
-    1.0,
-    0.5,
-    (int)random(180),
-  };
-
-  dots[1] = (dot){
-    40.0,
-    -10.0,
-    2.0,
-    0.5,
-    (int)random(180)
-  };
-
-  /*
-  for (int i = 0; i < numDots; i++) {
-    // create dot with random values
-    dots[i].position = random(60);
-    dots[i].velocity = random(-30, 30);
-    dots[i].mass = random(10);
-    dots[i].radius = .5;//random(2.5);
-    dots[i].colorInd = (int) random(180);
-  }
-  */
-
-  for (int i = 1; i < numDots; i++) {
-  collide[0] = false;
-  collide[numDots] = false;
-}
+#include "bouncy.h"
 
 void setup()
 {
   Serial.begin(9600);
   
-  for (int i=0; i<180; i++) {
+  // generate rainbow colors
+  for (int i = 0; i < 180; i++) {
     int hue = i * 2;
     int saturation = 100;
     int lightness = 5;
     // pre-compute the 180 rainbow colors
-    rainbowColors[i] = makeColor(hue, saturation, lightness);
+    rainbowColors[i] = make_color(hue, saturation, lightness);
   }
 
   make_dots();
   
   AudioMemory(24);
-  fft1024_1.windowFunction(AudioWindowHanning1024);
+  //fft1024_1.windowFunction(AudioWindowHanning1024);
   //fft1024_2.windowFunction(AudioWindowHanning1024);
   leds.begin();
 }
 
-int colorInd = 0;
-int color = rainbowColors[colorInd];
-const bool WALL = true;
-const int LEFT = 0;
-const int RIGHT = ledsPerStrip;
-void tick() {
-  // update position of each dot
-  for (int i = 0; i < numDots; i++) {
-    if (i > 0 && dots[i] < dots[i-1])
-      flashColor
-    dots[i].position += dots[i].velocity * (float)elapsed/1000.0;
-  }
-
-  // check for walls
-  if (WALL) {
-    if (dots[0].position - dots[0].radius < LEFT && dots[0].velocity < 0)
-      dots[0].velocity *= -1;
-    if (dots[numDots-1].position + dots[numDots-1].radius < RIGHT && dots[numDots-1].velocity > 0)
-      dots[0].velocity *= -1;
-  }
-
-  // check for collision between each pair of dots
-  boolean c = false;
-  for (int i = 1; i < numDots; i++) {
-    if ((dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius)){
-      c = true;      
-    }
-
-    collide[i+1] = (dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius);
-  }
-  
-  if (c){
-        setColor(50,50,50, true);
-  }
-
-
-  float newVel[numDots];
-
-  // apply collisions to velocity of each dot
-  float dm, cm;
-  for (int i = 1; i < numDots; i++) {
-    newVel[i] = dots[i].velocity;
-    if (collide[i] && collide[i+1]) {
-      newVel[i] = 0;
-    } else if (collide[i]) {
-      dm = dots[i-1].mass - dots[i].mass;
-      cm = dots[i-1].mass + dots[i].mass;
-      newVel[i] -= 2 * dots[i-1].mass * dots[i-1].velocity / cm - (dm * dots[i].velocity) / cm;
-    } else if (collide[i+1]) {
-      dm = dots[i].mass - dots[i+1].mass;
-      cm = dots[i].mass + dots[i+1].mass;
-      newVel[i] -= 2 * dots[i-1].mass * dots[i-1].velocity / cm + (dm * dots[i].velocity) / cm;
-    }
-  }
-
-  // check for special case
-  for (int i = 1; i < numDots; i++) {
-    // For a 3-way collision, the squished ball's velocity has to make the old
-    // momenta add up
-    if (newVel[i] == 0) {
-      newVel[i] = (
-          dots[i-1].velocity * dots[i-1].mass +  // left old momentum
-          dots[i].velocity * dots[i].mass +      // my old momentum
-          dots[i+1].velocity * dots[i+1].mass -  // right old momentum
-          newVel[i-1] * dots[i-1].mass -         // left new momentum
-          newVel[i+1] * dots[i+1].mass) /        // right new momentum
-            dots[i].mass;
-    }
-  }
-
-  // actually update velocities
-  for (int i = 0; i < numDots; i++) {
-    dots[i].velocity = newVel[i];
-  }
-
-  elapsed = 0;
-}
-
-bool first = true;
-
 void loop() {
-  if (timeSinceDraw > FRAME_TIME) {
-    draw();
-    timeSinceDraw = 0;
-  }
-
   if (first) {
     first = false;
-    elapsed = 0;
+    elapsed_millis = 0;
   }
 
   // physics simulating
-  tick();
+  simulate_dots((float)elapsed_millis / 1000.0);
   
+  // drawing
+  draw_dots((float)elapsed_millis / 1000.0);
+
   delay(10);
+  elapsed_millis = 0;
 }
 
-void setColor(int r, int g, int b, boolean show){
+void set_color(int r, int g, int b, boolean show){
   for (int i = 0; i < ledsPerStrip; i++) {    
     leds.setPixel(i, r, g, b);    
   }   
   
   if (show){
-        leds.show();
-  }
-}
-
-void draw() {
-  setColor(0,0,0, false);
-  int color;
-  int pixel;
-  for (int i = 0; i < numDots; i++) {    
-    color = rainbowColors[dots[i].colorInd];
-    pixel = (int) dots[i].position;
-    leds.setPixel(pixel, color);
-  } 
-
-//  leds.setPixel((int) dots[0].position, 50,50,50);
-//    leds.setPixel((int) dots[1].position, 50,50,50);
-
-  if(!leds.busy()){
     leds.show();
   }
-
 }
 
-int makeColor(unsigned int hue, unsigned int saturation, unsigned int lightness)
+int make_color(unsigned int hue, unsigned int saturation, unsigned int lightness)
 {
 	unsigned int red, green, blue;
 	unsigned int var1, var2;

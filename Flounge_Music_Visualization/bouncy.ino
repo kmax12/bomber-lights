@@ -98,6 +98,7 @@ void tick() {
 
   // apply collisions to velocity of each dot
   for (int i = 0; i < numDots; i++) {
+    newVel[i] = dots[i].velocity;
     if (collide[i] && collide[i+1]) {
       newVel[i] = 0;
     } else if (collide[i]) {
