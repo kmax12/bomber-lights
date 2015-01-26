@@ -24,32 +24,38 @@ OctoWS2811 leds(LEDS_PER_STRIP, display_memory, drawing_memory, config);
 elapsedMillis elapsed_millis;
 int led_buffer[LEDS_PER_STRIP];
 
+elapsedMillis frame_millis;
+
 bool first = true;
 
 void setup()
 {
   Serial.begin(9600);
+  delay(100);
    AudioMemory(24);
   //fft1024_1.windowFunction(AudioWindowHanning1024);
   //fft1024_2.windowFunction(AudioWindowHanning1024);
   leds.begin();
-  make_colors();
-  make_dots();
+  
 }
+
+int last_buffer[LEDS_PER_STRIP];
+int num_frames = 0;
 
 void loop() {
   if (first) {
     first = false;
     elapsed_millis = 0;
+    make_colors();
+    make_dots();
+  //  Serial.println(dots[0].position);
   }
-
-  // physics simulating
-  simulate_dots((float)elapsed_millis / 1000.0);
   
-  // check if it's time to draw yet
-  time_since_draw += (float)elapsed_millis / 1000.0;
-  if (time_since_draw >= DRAW_FRAME_TIME) {
-
+ 
+//    Serial.println(dots[0].velocity);
+  // physics simulating
+     simulate_dots((float)elapsed_millis / 1000.0);
+     elapsed_millis = 0;
     time_since_draw -= DRAW_FRAME_TIME;
 
     // clear the board
@@ -58,11 +64,9 @@ void loop() {
     // render dots
     draw_dots(led_buffer);
     for (int i = 0; i < LEDS_PER_STRIP; i++) {
-      if (led_buffer[i] != 0){
-             Serial.println(i);
-      }
-
-      leds.setPixel(i, led_buffer[i]);    
+      led_buffer[i] = blend_color(led_buffer[i], last_buffer[i]);
+      leds.setPixel(i, led_buffer[i]);
+      last_buffer[i] = dim_color(led_buffer[i], .7);
      } 
     
 
@@ -70,9 +74,17 @@ void loop() {
     if (!leds.busy()) {
       leds.show();
     }
-  }
-  elapsed_millis = 0;
-  delay(600);
+    
+    num_frames += 1;
+    if (frame_millis > 1000){
+      //Serial.print("fps");
+      //Serial.println((float)num_frames/frame_millis*1000);
+      num_frames = 0;
+      frame_millis = 0;
+    }
+
+  delay(10);
+
 }
 
 // Set the whole strip to a single rgb color

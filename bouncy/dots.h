@@ -7,12 +7,12 @@
 #include "colors.h"
 #include "bouncy.h"
 
-#define DRAW_FRAME_TIME 0.1
+#define DRAW_FRAME_TIME 0.017
 #define MAX_DOTS 20
 #define NUM_COLORS 180
 
-#define MIN_VEL 10
-#define MAX_VEL 30
+#define MIN_VEL 5
+#define MAX_VEL 20
 #define MIN_MASS 2
 #define MAX_MASS 10
 #define MIN_RAD 2
@@ -21,7 +21,7 @@
 #define RANDOM(X, Y) (rand() * ((Y) - (X)) + (X))
 
 #define LEFT 0
-#define RIGHT 60
+#define RIGHT LEDS_PER_STRIP
 #define WALL 1
 
 // dot class 
@@ -33,6 +33,7 @@ public:
   float mass;
   float radius;
   int colorInd;
+  float color_val;
 
   // constructor prototypes
   dot();
