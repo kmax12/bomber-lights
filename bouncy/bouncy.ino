@@ -5,6 +5,7 @@
 #include <OctoWS2811.h>
 #include "dots.h"
 #include "colors.h"
+#include "bouncy.h"
 
 #define LEDS_PER_STRIP 60
 
@@ -21,20 +22,19 @@ const int config = WS2811_GRB | WS2811_800kHz;
 OctoWS2811 leds(LEDS_PER_STRIP, display_memory, drawing_memory, config);
 
 elapsedMillis elapsed_millis;
+int led_buffer[LEDS_PER_STRIP];
 
 bool first = true;
 
 void setup()
 {
   Serial.begin(9600);
-
-  make_colors();
-  make_dots();
-  
-  AudioMemory(24);
+   AudioMemory(24);
   //fft1024_1.windowFunction(AudioWindowHanning1024);
   //fft1024_2.windowFunction(AudioWindowHanning1024);
   leds.begin();
+  make_colors();
+  make_dots();
 }
 
 void loop() {
@@ -47,24 +47,32 @@ void loop() {
   simulate_dots((float)elapsed_millis / 1000.0);
   
   // check if it's time to draw yet
-  time_since_draw += elapsed;
+  time_since_draw += (float)elapsed_millis / 1000.0;
   if (time_since_draw >= DRAW_FRAME_TIME) {
+
     time_since_draw -= DRAW_FRAME_TIME;
 
     // clear the board
     set_color(0,0,0, false);
 
     // render dots
-    draw_dots(leds);
+    draw_dots(led_buffer);
+    for (int i = 0; i < LEDS_PER_STRIP; i++) {
+      if (led_buffer[i] != 0){
+             Serial.println(i);
+      }
+
+      leds.setPixel(i, led_buffer[i]);    
+     } 
+    
 
     // flush to the led strip
     if (!leds.busy()) {
       leds.show();
     }
   }
-
-  delay(10);
   elapsed_millis = 0;
+  delay(600);
 }
 
 // Set the whole strip to a single rgb color

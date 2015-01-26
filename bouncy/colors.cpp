@@ -1,16 +1,19 @@
 #include "colors.h"
+#include "Arduino.h"
 
 // 180 pretty bright colors
 int rainbow_colors[180];
 
 // generate rainbow colors
 void make_colors() {
+   Serial.println("color enter");
   for (int i = 0; i < 180; i++) {
     int hue = i * 2;
     int saturation = 100;
     int lightness = 5;
     // pre-compute the 180 rainbow colors
-    rainbowColors[i] = make_color(hue, saturation, lightness);
+    Serial.println("color loop");
+    rainbow_colors[i] = make_color(hue, saturation, lightness);
   }
 }
 

@@ -4,8 +4,8 @@
 #include <time.h>
 #include <stdlib.h>
 #include "Arduino.h"
-#include <OctoWS2811.h>
 #include "colors.h"
+#include "bouncy.h"
 
 #define DRAW_FRAME_TIME 0.1
 #define MAX_DOTS 20
@@ -24,14 +24,6 @@
 #define RIGHT 60
 #define WALL 1
 
-static inline int random_sign() {
-  if (rand() * 2 > 1) {
-    return 1;
-  } else {
-    return -1;
-  }
-}
-
 // dot class 
 class dot {
 public:
@@ -42,48 +34,29 @@ public:
   float radius;
   int colorInd;
 
-  dot() {
-    position = RANDOM(LEFT, RIGHT);
-    velocity = RANDOM(MIN_VEL, MAX_VEL) * random_sign();
-    mass = RANDOM(MIN_MASS, MAX_MASS);
-    radius = RANDOM(MIN_RAD, MAX_RAD);
-    colorInd = (int)(rand() * NUM_COLORS);
-  }
-
-  dot(float p, float v, float m, float r) {
-    position = p;
-    velocity = v;
-    mass = m;
-    radius = r;
-    colorInd = (int)(rand() * NUM_COLORS);
-  }
-
-  dot(float p, float v, float m, float r, int c) {
-    position = p;
-    velocity = v;
-    mass = m;
-    radius = r;
-    colorInd = c;
-  }
+  // constructor prototypes
+  dot();
+  dot(float p, float v, float m, float r);
+  dot(float p, float v, float m, float r, int c);
 };
 
 // current number of active dots
-int num_dots;
+extern int num_dots;
 
 // time since last draw
-float time_since_draw;
+extern float time_since_draw;
 
 // active dots array
-dot[] dots;
+extern dot dots[];
 
 // indicator for whether each neighboring pair of dots has collided in a given
 // frame. buffered on either side by zeros.
-bool[] collide;
+extern bool collide[];
 
 void make_dots();
 
 void simulate_dots(float elapsed);
 
-void draw_dots(float elapsed);
+void draw_dots(int* led);
 
 #endif
