@@ -1,7 +1,5 @@
 #include "dots.h"
 
-#define LEDS_PER_STRIP 60
-
 // define stuff
 int num_dots = 6;
 float time_since_draw = 0;
@@ -23,7 +21,7 @@ dot::dot() {
   velocity = random(MIN_VEL, MAX_VEL) * random_sign();
   mass = random(MIN_MASS, MAX_MASS);
   radius = random(MIN_RAD, MAX_RAD);
-  colorInd = (int)(random(NUM_COLORS));
+  color_ind = (int)(random(NUM_COLORS));
   color_val = 1.0;
 }
 
@@ -32,7 +30,7 @@ dot::dot(float p, float v, float m, float r) {
   velocity = v;
   mass = m;
   radius = r;
-  colorInd = (int)(random(NUM_COLORS));
+  color_ind = (int)(random(NUM_COLORS));
   color_val = 1.0;
 }
 
@@ -41,8 +39,13 @@ dot::dot(float p, float v, float m, float r, int c) {
   velocity = v;
   mass = m;
   radius = r;
-  colorInd = c;
+  color_ind = c;
   color_val = 1.0;
+}
+
+// comparison function for qsort
+bool cmpfunc (const dot& a, const dot& b) {
+  return (a.position < b.position);
 }
 
 // initial setup
@@ -50,145 +53,165 @@ void make_dots() {
   // seed arduino rng
   //randomSeed(analogRead(0));
 
+  /*
   dots[0] = dot(20.0, 15.0, 10.0, 0.5, 100);
   dots[1] = dot(23.0, -100.0, 1.0, 0.5, 50);
   dots[2] = dot(30.0, 1.0, 3.0, 0.5, 130);
   dots[3] = dot(35.0, 8.0, 6.0, 0.5, 170);  
   dots[4] = dot(45.0, 10.0, 5.0, 0.5, 20);
   dots[5] = dot(52.0, -10.0, 2.0, 0.5, 80);
+  */
 
   num_dots = 3;
   
-/*
+  // create dots with random values
   for (int i = 0; i < num_dots; i++) {
-    // create dot with random values
     dots[i] = dot();
   }
   
-  qsort(
-  */
+  // sort the array so we can do collisions properly
+  std::sort(dots, dots+num_dots, cmpfunc);
   
+  // initialize collide array to falses
   for (int i=0; i<MAX_DOTS+1; i++){
     collide[i] = false;
   }
 }
 
-int cmpfunc (const void * a, const void * b)
-{
-   return ( *(int*)a - *(int*)b );
-}
-
 // called every frame to update the world state
 void simulate_dots(float elapsed) {
-  Serial.println(random(90,100)/100.0);
-  elapsed *= random(50,100)/100.0;
-//  Serial.println(dots[0].mass);
-  // update position of each dot
+  float new_vel[num_dots];
+  float new_pos[num_dots];
+  float new_color_val[num_dots];
+  float dm, cm, dist;
+
+  // make a tentative update of each dot
   for (int i = 0; i < num_dots; i++) {
-    dots[i].position += dots[i].velocity * elapsed;
-    dots[i].color_val *= 0.9;
+    // copy old values
+    new_pos[i] = dots[i].position;
+    new_vel[i] = dots[i].velocity;
+    new_color_val[i] = dots[i].color_val;
+
+    // update some for now
+    new_pos[i] += dots[i].velocity * elapsed;
+    new_color_val[i] = dots[i].color_val * std::pow(M_E, COLOR_DECAY * elapsed);
   }
   
-  // check for walls
+  // check for collisions with walls, and adjust position/velocity accordingly
   if (WALL) {
     // left wall
     if (dots[0].position - dots[0].radius < LEFT) {
-      dots[0].velocity *= -1.0;
-      dots[0].position += 2*(LEFT - (dots[0].position - dots[0].radius));
-      dots[0].color_val += 0.5;
+      new_vel[0] *= -1.0;
+      new_pos[0] += 2 * (LEFT - (dots[0].position - dots[0].radius));
+      INCR_COLOR(dots[0]);
     }
 
     // right wall
     if (dots[num_dots-1].position + dots[num_dots-1].radius > RIGHT) {
       dots[num_dots-1].velocity *= -1.0;
-      dots[num_dots-1].position += 2*(RIGHT - (dots[num_dots-1].position+dots[num_dots-1].radius));
-      dots[num_dots-1].color_val += 0.5;
+      dots[num_dots-1].position += 2 * 
+          (RIGHT - (dots[num_dots-1].position + dots[num_dots-1].radius));
+      INCR_COLOR(dots[num_dots-1]);
     }
   }
 
-  boolean c = false;
-
-  // check for collision between each pair of dots
+  // check for collision between each pair of dots, and recurse if there is a
+  // 3-way ;)
   for (int i = 1; i < num_dots; i++) {
-    if ((dots[i].position + dots[i].radius > dots[i+1].position - dots[i+1].radius)){
-      c = true;      
-    }
-
     collide[i] = (dots[i-1].position + dots[i-1].radius > 
                     dots[i].position - dots[i].radius);
+    
+    // if we have a 3-way collision or more, recurse with smaller values.
+    // todo: should be possible to figure out which collision happened first and
+    // just jump to that time
+    if (collide[i] && collide[i-1]) {
+      simulate_dots(elapsed / 2.0);
+      simulate_dots(elapsed / 2.0);
+      return;
+    }
+  }
+
+  // apply initial position/velocity updates, since we're not recursing
+  for (int i = 0; i < num_dots; i++) {
+    dots[i].position = new_pos[i];
+    dots[i].velocity = new_vel[i];
   }
   
-  float new_vel[num_dots];
-
-  // apply collisions to velocity of each dot
-  float dm, cm, dist;
+  // apply collisions to calculate new position and velocity of each dot
   for (int i = 0; i < num_dots; i++) {
-    new_vel[i] = dots[i].velocity;
-    
-    if (collide[i] && collide[i+1]) {
+    if (collide[i] && collide[i+1]) { // special case of 3 ball collision
       new_vel[i] = 0;
-      dots[i].color_val += 0.5;
-      
-    } else if (collide[i]) { // bounce the ball on the right (b2)
-      Serial.println("collide i");
-      collide[i] = false;
-      dm = dots[i-1].mass - dots[i].mass;
-      cm = dots[i-1].mass + dots[i].mass;
-      new_vel[i] = 2 * dots[i-1].mass * dots[i-1].velocity / cm - (dm * dots[i].velocity) / cm;
-      
-      float overlap = ((dots[i-1].position + dots[i-1].radius) - (dots[i].position - dots[i].radius));
-      float right_overlap = overlap * dots[i].velocity / (dots[i].velocity - dots[i-1].velocity);
-      
-      dots[i].position += right_overlap;
-      float ovl_time = right_overlap / dots[i].velocity;
-      dots[i].position += (elapsed - ovl_time) * new_vel[i];
-      dots[i].color_val += 0.5;
+      INCR_COLOR(dots[i]);
       
     } else if (collide[i+1]) { // bounce the ball on the left (b1)
-      Serial.println("collide i +1");
+      Serial.print("collide left:");
+      Serial.println(i);
+
+      // calculate the left dot's new velocity
       dm = dots[i].mass - dots[i+1].mass;
       cm = dots[i].mass + dots[i+1].mass;
       new_vel[i] = 2 * dots[i+1].mass * dots[i+1].velocity / cm +
                     (dm * dots[i].velocity) / cm;
-                    
-      float overlap = ((dots[i].position + dots[i].radius) - (dots[i+1].position - dots[i+1].radius));
-      float left_overlap = overlap * dots[i].velocity / (dots[i].velocity - dots[i+1].velocity);
-      
+
+      // figure out where the left dot was when it collided
+      float overlap = ((dots[i].position + dots[i].radius) - 
+            (dots[i+1].position - dots[i+1].radius));
+      float left_overlap = overlap * dots[i].velocity / 
+            (dots[i].velocity - dots[i+1].velocity);
       dots[i].position -= left_overlap;
+
+      // now find how much time has elapsed since the collision, and apply the
+      // new velocity for that long
       float ovl_time = left_overlap / dots[i].velocity;
       dots[i].position += (elapsed - ovl_time) * new_vel[i];
-      dots[i].color_val += 0.5;
 
+      // increment brightness
+      INCR_COLOR(dots[i]);
+
+    } else if (collide[i]) { // bounce the ball on the right (b2)
+      Serial.print("collide right:");
+      Serial.println(i);
+
+      // reset collide[i]
+      collide[i] = false;
+
+      // calculate the right dot's new velocity
+      dm = dots[i-1].mass - dots[i].mass;
+      cm = dots[i-1].mass + dots[i].mass;
+      new_vel[i] = 2 * dots[i-1].mass * dots[i-1].velocity / cm - 
+            (dm * dots[i].velocity) / cm;
+      
+      // figure out where the right dot was when it actually collided
+      float overlap = ((dots[i-1].position + dots[i-1].radius) -
+            (dots[i].position - dots[i].radius));
+      float right_overlap = overlap * dots[i].velocity / 
+            (dots[i].velocity - dots[i-1].velocity);
+      new_pos[i] += right_overlap;
+
+      // now find how much time has elapsed since the collision, and apply the
+      // new velocity for that long
+      float delta_t = right_overlap / dots[i].velocity;
+      dots[i].position += (elapsed - delta_t) * new_vel[i];
+
+      // increment brightness
+      INCR_COLOR(dots[i]);
     }
   }
 
-  // check for special case
-//  for (int i = 1; i < num_dots; i++) {
-//    // For a 3-way collision, the squished ball's velocity has to make the old
-//    // momenta add up
-//    if (new_vel[i] == 0) {
-//      new_vel[i] = (
-//          dots[i-1].velocity * dots[i-1].mass +  // left old momentum
-//          dots[i].velocity * dots[i].mass +      // my old momentum
-//          dots[i+1].velocity * dots[i+1].mass -  // right old momentum
-//          new_vel[i-1] * dots[i-1].mass -         // left new momentum
-//          new_vel[i+1] * dots[i+1].mass) /        // right new momentum
-//            dots[i].mass;
-//    }
-//  }
-
-  // actually update velocities
+  // do final update of positions & velocities
   for (int i = 0; i < num_dots; i++) {
     if (dots[i].velocity != new_vel[i]) {
-      Serial.println("diff:");
+      Serial.println("velocity diff:");
       Serial.println(dots[i].velocity);
       Serial.println(new_vel[i]);
     }
+
     dots[i].velocity = new_vel[i];
+    dots[i].position = new_pos[i];
   }
 }
 
-// Given an LED object, render dots to the strip
+// render dots to the strip as an array of color values
 void draw_dots(int* leds) {
   int color;
   int pixel;
@@ -198,8 +221,8 @@ void draw_dots(int* leds) {
   } 
 
   for (int i = 0; i < num_dots; i++) {    
-    color = rainbow_colors[dots[i].colorInd];
+    color = rainbow_colors[dots[i].color_ind];
     pixel = (int) dots[i].position;
-    leds[pixel] = dim_color(color, dots[i].color_val);
+    leds[pixel] = blend_color(leds[pixel], dim_color(color, dots[i].color_val));
   } 
 }

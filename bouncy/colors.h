@@ -1,6 +1,8 @@
 #ifndef COLORS_H
 #define COLORS_H
 
+#include "Arduino.h"
+
 extern int rainbow_colors[];
 
 void make_colors();

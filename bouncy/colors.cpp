@@ -1,5 +1,4 @@
 #include "colors.h"
-#include "Arduino.h"
 
 // 180 pretty bright colors
 int rainbow_colors[180];
@@ -40,9 +39,11 @@ int make_color(unsigned int hue, unsigned int saturation, unsigned int lightness
 		green = h2rgb(var1, var2, hue) * 255 / 600000;
 		blue = h2rgb(var1, var2, (hue >= 120) ? hue - 120 : hue + 240) * 255 / 600000;
 	}
+
 	return (red << 16) | (green << 8) | blue;
 }
 
+// lower the RGB values of a color by a constant factor
 int dim_color(int color, float value) {
     int r = (int)((color >> 16 & 0xFF) * value);
     int g = (int)((color >> 8 & 0xFF) * value);
@@ -51,6 +52,7 @@ int dim_color(int color, float value) {
     return (r << 16) | (g << 8) | b;    
 }
 
+// blend two RGB colors by taking the max of each value
 int blend_color(int c1, int c2) {
     int r = max(c1 >> 16 & 0xFF, c2 >> 16 & 0xFF);
     int g = max(c1 >> 8 & 0xFF, c2 >> 8 & 0xFF);

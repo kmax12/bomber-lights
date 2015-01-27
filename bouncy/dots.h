@@ -3,6 +3,8 @@
 
 #include <time.h>
 #include <stdlib.h>
+#include <math.h>
+#include <algorithm>
 #include "Arduino.h"
 #include "colors.h"
 #include "bouncy.h"
@@ -21,8 +23,12 @@
 #define RANDOM(X, Y) (rand() * ((Y) - (X)) + (X))
 
 #define LEFT 0
-#define RIGHT LEDS_PER_STRIP
+#define RIGHT TOTAL_LEDS
 #define WALL 1
+
+// macro to increase color value whenever there's a collision
+#define INCR_COLOR(dot) (dot).color_val += 0.5
+#define COLOR_DECAY 1
 
 // dot class 
 class dot {
@@ -32,7 +38,7 @@ public:
   float velocity;
   float mass;
   float radius;
-  int colorInd;
+  int color_ind;
   float color_val;
 
   // constructor prototypes
