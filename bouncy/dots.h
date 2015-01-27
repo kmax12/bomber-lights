@@ -30,6 +30,10 @@
 #define COLOR_INCR 0.5
 #define COLOR_DECAY 8
 
+// the maximum number of recursions on simulate_dots to handle simultaneous
+// collisions
+#define MAX_RECURSE_DEPTH 10
+
 // dot class 
 class dot {
 public:
