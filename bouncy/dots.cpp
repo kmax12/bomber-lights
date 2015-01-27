@@ -60,7 +60,7 @@ void make_dots() {
   dots[4] = dot(45.0, 10.0, 5.0, 0.5, 20);
   dots[5] = dot(52.0, -10.0, 2.0, 0.5, 80);
 
-  num_dots = 6;
+  num_dots = 3;
   
   /*
   // create dots with random values
@@ -94,23 +94,23 @@ void simulate_dots(float elapsed) {
 
     // update some for now
     new_pos[i] += dots[i].velocity * elapsed;
-    new_color_val[i] = dots[i].color_val * std::pow(M_E, COLOR_DECAY * elapsed);
+    new_color_val[i] = dots[i].color_val * std::pow(M_E, -COLOR_DECAY * elapsed);
   }
-  
+  Serial.println("a");
   // check for collisions with walls, and adjust position/velocity accordingly
   if (WALL) {
     // left wall
-    if (dots[0].position - dots[0].radius < LEFT) {
+    if (new_pos[0] - dots[0].radius < LEFT) {
       new_vel[0] *= -1.0;
-      new_pos[0] += 2 * (LEFT - (dots[0].position - dots[0].radius));
+      new_pos[0] += 2 * (LEFT - (new_pos[0] - dots[0].radius));
       new_color_val[0] += COLOR_INCR;
     }
 
     // right wall
-    if (dots[num_dots-1].position + dots[num_dots-1].radius > RIGHT) {
+    if (new_pos[num_dots-1] + dots[num_dots-1].radius > RIGHT) {
       new_vel[num_dots-1] *= -1.0;
       new_pos[num_dots-1] += 2 * 
-          (RIGHT - (dots[num_dots-1].position + dots[num_dots-1].radius));
+          (RIGHT - (new_pos[num_dots-1]+ dots[num_dots-1].radius));
       new_color_val[num_dots-1] += COLOR_INCR;
     }
   }
@@ -135,7 +135,6 @@ void simulate_dots(float elapsed) {
   for (int i = 0; i < num_dots; i++) {
     dots[i].position = new_pos[i];
     dots[i].velocity = new_vel[i];
-    dots[i].color_val = new_color_val[i];
   }
   
   // apply collisions to calculate new position and velocity of each dot
@@ -170,7 +169,7 @@ void simulate_dots(float elapsed) {
       new_pos[i] += (elapsed - ovl_t) * new_vel[i];
 
       // increment brightness
-      dots[i].color_val += COLOR_INCR;
+      new_color_val[i] += COLOR_INCR;
 
     } else if (collide[i]) { // bounce the ball on the right (b2)
       Serial.print("collide right:");
@@ -198,7 +197,7 @@ void simulate_dots(float elapsed) {
       new_pos[i] += (elapsed - ovl_t) * new_vel[i];
 
       // increment brightness
-      dots[i].color_val += COLOR_INCR;
+      new_color_val[i] += COLOR_INCR;
     }
   }
 
@@ -212,6 +211,7 @@ void simulate_dots(float elapsed) {
 
     dots[i].velocity = new_vel[i];
     dots[i].position = new_pos[i];
+    dots[i].color_val = min(new_color_val[i],1);
   }
 }
 
