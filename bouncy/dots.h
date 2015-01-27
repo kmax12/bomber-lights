@@ -28,7 +28,7 @@
 
 // macro to increase color value whenever there's a collision
 #define COLOR_INCR 0.5
-#define COLOR_DECAY 1
+#define COLOR_DECAY 8
 
 // dot class 
 class dot {

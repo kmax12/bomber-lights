@@ -60,7 +60,7 @@ void make_dots() {
   dots[4] = dot(45.0, 10.0, 5.0, 0.5, 20);
   dots[5] = dot(52.0, -10.0, 2.0, 0.5, 80);
 
-  num_dots = 6;
+  num_dots = 3;
   
   /*
   // create dots with random values
@@ -96,9 +96,9 @@ void simulate_dots(float elapsed) {
 
     // update position and color_val for now
     new_pos[i] += dots[i].velocity * elapsed;
-    new_color_val[i] = dots[i].color_val * std::pow(M_E, COLOR_DECAY * elapsed);
+    new_color_val[i] = dots[i].color_val * std::pow(M_E, -COLOR_DECAY * elapsed);
   }
-  
+  Serial.println("a");
   // check for collisions with walls, and adjust position/velocity accordingly
   if (WALL) {
     // left wall
@@ -133,7 +133,7 @@ void simulate_dots(float elapsed) {
       if (i + 1 == num_dots) { // hit the right wall
         new_vel[num_dots-1] *= -1.0;
         new_pos[num_dots-1] += 2 * 
-            (RIGHT - (dots[num_dots-1].position + dots[num_dots-1].radius));
+            (RIGHT - (new_pos[num_dots-1]+ dots[num_dots-1].radius));
       }
 
       // calculate the left dot's new velocity
@@ -163,8 +163,7 @@ void simulate_dots(float elapsed) {
       
       if (i == 0) { // hit the left wall
         new_vel[0] *= -1.0;
-        new_pos[0] += 2 * (LEFT - (dots[0].position - dots[0].radius));
-        new_color_val[0] += COLOR_INCR;
+        new_pos[0] += 2 * (LEFT - (new_pos[0] - dots[0].radius));
       }
 
       // reset collide[i]
@@ -203,6 +202,7 @@ void simulate_dots(float elapsed) {
 
     dots[i].velocity = new_vel[i];
     dots[i].position = new_pos[i];
+    dots[i].color_val = min(new_color_val[i],1);
   }
 }
 
