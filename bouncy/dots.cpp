@@ -79,14 +79,14 @@ void make_dots() {
 }
 
 // make these global so recursive calls don't need extra memory
-float new_vel[num_dots];
-float new_pos[num_dots];
-float new_color_val[num_dots];
+
 float dm, cm, dist;
 
 // called every frame to update the world state
 void simulate_dots(float elapsed) {
-
+  float new_vel[num_dots];
+  float new_pos[num_dots];
+  float new_color_val[num_dots];
   // make a tentative update of each dot
   for (int i = 0; i < num_dots; i++) {
     // copy old values into new_* arrays
