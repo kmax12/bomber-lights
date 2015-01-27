@@ -53,17 +53,16 @@ void make_dots() {
   // seed arduino rng
   //randomSeed(analogRead(0));
 
-  /*
   dots[0] = dot(20.0, 15.0, 10.0, 0.5, 100);
   dots[1] = dot(23.0, -100.0, 1.0, 0.5, 50);
   dots[2] = dot(30.0, 1.0, 3.0, 0.5, 130);
   dots[3] = dot(35.0, 8.0, 6.0, 0.5, 170);  
   dots[4] = dot(45.0, 10.0, 5.0, 0.5, 20);
   dots[5] = dot(52.0, -10.0, 2.0, 0.5, 80);
-  */
 
-  num_dots = 3;
+  num_dots = 6;
   
+  /*
   // create dots with random values
   for (int i = 0; i < num_dots; i++) {
     dots[i] = dot();
@@ -71,6 +70,7 @@ void make_dots() {
   
   // sort the array so we can do collisions properly
   std::sort(dots, dots+num_dots, cmpfunc);
+  */
   
   // initialize collide array to falses
   for (int i=0; i<MAX_DOTS+1; i++){
