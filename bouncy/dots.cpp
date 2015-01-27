@@ -78,21 +78,23 @@ void make_dots() {
   }
 }
 
+// make these global so recursive calls don't need extra memory
+float new_vel[num_dots];
+float new_pos[num_dots];
+float new_color_val[num_dots];
+float dm, cm, dist;
+
 // called every frame to update the world state
 void simulate_dots(float elapsed) {
-  float new_vel[num_dots];
-  float new_pos[num_dots];
-  float new_color_val[num_dots];
-  float dm, cm, dist;
 
   // make a tentative update of each dot
   for (int i = 0; i < num_dots; i++) {
-    // copy old values
+    // copy old values into new_* arrays
     new_pos[i] = dots[i].position;
     new_vel[i] = dots[i].velocity;
     new_color_val[i] = dots[i].color_val;
 
-    // update some for now
+    // update position and color_val for now
     new_pos[i] += dots[i].velocity * elapsed;
     new_color_val[i] = dots[i].color_val * std::pow(M_E, COLOR_DECAY * elapsed);
   }
@@ -100,19 +102,10 @@ void simulate_dots(float elapsed) {
   // check for collisions with walls, and adjust position/velocity accordingly
   if (WALL) {
     // left wall
-    if (dots[0].position - dots[0].radius < LEFT) {
-      new_vel[0] *= -1.0;
-      new_pos[0] += 2 * (LEFT - (dots[0].position - dots[0].radius));
-      new_color_val[0] += COLOR_INCR;
-    }
+    collide[0] = (dots[0].position - dots[0].radius < LEFT);
 
     // right wall
-    if (dots[num_dots-1].position + dots[num_dots-1].radius > RIGHT) {
-      new_vel[num_dots-1] *= -1.0;
-      new_pos[num_dots-1] += 2 * 
-          (RIGHT - (dots[num_dots-1].position + dots[num_dots-1].radius));
-      new_color_val[num_dots-1] += COLOR_INCR;
-    }
+    collide[num_dots] = (dots[num_dots-1].position + dots[num_dots-1].radius > RIGHT);
   }
 
   // check for collision between each pair of dots, and recurse if there is a
@@ -124,32 +117,24 @@ void simulate_dots(float elapsed) {
     // if we have a 3-way collision or more, recurse with smaller values.
     // todo: should be possible to figure out which collision happened first and
     // just jump to that time
-    if (collide[i] && collide[i-1]) {
+    if (collide[i] && collide[i-1] || collide[i] && collide[i+1]) {
       simulate_dots(elapsed / 2.0);
       simulate_dots(elapsed / 2.0);
       return;
     }
   }
 
-  // apply initial position/velocity updates, since we're not recursing
-  for (int i = 0; i < num_dots; i++) {
-    dots[i].position = new_pos[i];
-    dots[i].velocity = new_vel[i];
-    dots[i].color_val = new_color_val[i];
-  }
-  
   // apply collisions to calculate new position and velocity of each dot
   for (int i = 0; i < num_dots; i++) {
-    /*
-    if (collide[i] && collide[i+1]) { // this should never happen
-      Serial.println("Error!!!!!!!!!!");
-      exit(1);
-      
-    } else 
-    */
     if (collide[i+1]) { // bounce the ball on the left (b1)
       Serial.print("collide left:");
       Serial.println(i);
+
+      if (i + 1 == num_dots) { // hit the right wall
+        new_vel[num_dots-1] *= -1.0;
+        new_pos[num_dots-1] += 2 * 
+            (RIGHT - (dots[num_dots-1].position + dots[num_dots-1].radius));
+      }
 
       // calculate the left dot's new velocity
       dm = dots[i].mass - dots[i+1].mass;
@@ -170,11 +155,17 @@ void simulate_dots(float elapsed) {
       new_pos[i] += (elapsed - ovl_t) * new_vel[i];
 
       // increment brightness
-      dots[i].color_val += COLOR_INCR;
+      new_color_val[i] += COLOR_INCR;
 
     } else if (collide[i]) { // bounce the ball on the right (b2)
       Serial.print("collide right:");
       Serial.println(i);
+      
+      if (i == 0) { // hit the left wall
+        new_vel[0] *= -1.0;
+        new_pos[0] += 2 * (LEFT - (dots[0].position - dots[0].radius));
+        new_color_val[0] += COLOR_INCR;
+      }
 
       // reset collide[i]
       collide[i] = false;
@@ -198,7 +189,7 @@ void simulate_dots(float elapsed) {
       new_pos[i] += (elapsed - ovl_t) * new_vel[i];
 
       // increment brightness
-      dots[i].color_val += COLOR_INCR;
+      new_color_val[i] += COLOR_INCR;
     }
   }
 
