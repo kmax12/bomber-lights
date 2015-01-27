@@ -103,23 +103,23 @@ void simulate_dots(float elapsed) {
     if (dots[0].position - dots[0].radius < LEFT) {
       new_vel[0] *= -1.0;
       new_pos[0] += 2 * (LEFT - (dots[0].position - dots[0].radius));
-      INCR_COLOR(dots[0]);
+      new_color_val[0] += COLOR_INCR;
     }
 
     // right wall
     if (dots[num_dots-1].position + dots[num_dots-1].radius > RIGHT) {
-      dots[num_dots-1].velocity *= -1.0;
-      dots[num_dots-1].position += 2 * 
+      new_vel[num_dots-1] *= -1.0;
+      new_pos[num_dots-1] += 2 * 
           (RIGHT - (dots[num_dots-1].position + dots[num_dots-1].radius));
-      INCR_COLOR(dots[num_dots-1]);
+      new_color_val[num_dots-1] += COLOR_INCR;
     }
   }
 
   // check for collision between each pair of dots, and recurse if there is a
   // 3-way ;)
   for (int i = 1; i < num_dots; i++) {
-    collide[i] = (dots[i-1].position + dots[i-1].radius > 
-                    dots[i].position - dots[i].radius);
+    collide[i] = (new_pos[i-1] + dots[i-1].radius > 
+                    new_pos[i] - dots[i].radius);
     
     // if we have a 3-way collision or more, recurse with smaller values.
     // todo: should be possible to figure out which collision happened first and
@@ -135,15 +135,19 @@ void simulate_dots(float elapsed) {
   for (int i = 0; i < num_dots; i++) {
     dots[i].position = new_pos[i];
     dots[i].velocity = new_vel[i];
+    dots[i].color_val = new_color_val[i];
   }
   
   // apply collisions to calculate new position and velocity of each dot
   for (int i = 0; i < num_dots; i++) {
-    if (collide[i] && collide[i+1]) { // special case of 3 ball collision
-      new_vel[i] = 0;
-      INCR_COLOR(dots[i]);
+    /*
+    if (collide[i] && collide[i+1]) { // this should never happen
+      Serial.println("Error!!!!!!!!!!");
+      exit(1);
       
-    } else if (collide[i+1]) { // bounce the ball on the left (b1)
+    } else 
+    */
+    if (collide[i+1]) { // bounce the ball on the left (b1)
       Serial.print("collide left:");
       Serial.println(i);
 
@@ -158,15 +162,15 @@ void simulate_dots(float elapsed) {
             (dots[i+1].position - dots[i+1].radius));
       float left_overlap = overlap * dots[i].velocity / 
             (dots[i].velocity - dots[i+1].velocity);
-      dots[i].position -= left_overlap;
+      new_pos[i] -= left_overlap;
 
       // now find how much time has elapsed since the collision, and apply the
       // new velocity for that long
-      float ovl_time = left_overlap / dots[i].velocity;
-      dots[i].position += (elapsed - ovl_time) * new_vel[i];
+      float ovl_t = left_overlap / dots[i].velocity;
+      new_pos[i] += (elapsed - ovl_t) * new_vel[i];
 
       // increment brightness
-      INCR_COLOR(dots[i]);
+      dots[i].color_val += COLOR_INCR;
 
     } else if (collide[i]) { // bounce the ball on the right (b2)
       Serial.print("collide right:");
@@ -190,11 +194,11 @@ void simulate_dots(float elapsed) {
 
       // now find how much time has elapsed since the collision, and apply the
       // new velocity for that long
-      float delta_t = right_overlap / dots[i].velocity;
-      dots[i].position += (elapsed - delta_t) * new_vel[i];
+      float ovl_t = right_overlap / dots[i].velocity;
+      new_pos[i] += (elapsed - ovl_t) * new_vel[i];
 
       // increment brightness
-      INCR_COLOR(dots[i]);
+      dots[i].color_val += COLOR_INCR;
     }
   }
 

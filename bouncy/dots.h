@@ -27,7 +27,7 @@
 #define WALL 1
 
 // macro to increase color value whenever there's a collision
-#define INCR_COLOR(dot) (dot).color_val += 0.5
+#define COLOR_INCR 0.5
 #define COLOR_DECAY 1
 
 // dot class 
