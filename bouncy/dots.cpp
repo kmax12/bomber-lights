@@ -102,10 +102,10 @@ void simulate_dots(float elapsed) {
   // check for collisions with walls, and adjust position/velocity accordingly
   if (WALL) {
     // left wall
-    collide[0] = (dots[0].position - dots[0].radius < LEFT);
+    collide[0] = (new_pos[0] - dots[0].radius < LEFT);
 
     // right wall
-    collide[num_dots] = (dots[num_dots-1].position + dots[num_dots-1].radius > RIGHT);
+    collide[num_dots] = (new_pos[num_dots-1] + dots[num_dots-1].radius > RIGHT);
   }
 
   // check for collision between each pair of dots, and recurse if there is a
@@ -134,6 +134,7 @@ void simulate_dots(float elapsed) {
         new_vel[num_dots-1] *= -1.0;
         new_pos[num_dots-1] += 2 * 
             (RIGHT - (new_pos[num_dots-1]+ dots[num_dots-1].radius));
+        continue;
       }
 
       // calculate the left dot's new velocity
@@ -164,6 +165,7 @@ void simulate_dots(float elapsed) {
       if (i == 0) { // hit the left wall
         new_vel[0] *= -1.0;
         new_pos[0] += 2 * (LEFT - (new_pos[0] - dots[0].radius));
+        continue;
       }
 
       // reset collide[i]
