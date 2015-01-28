@@ -116,7 +116,8 @@ void simulate_dots(float elapsed, int depth=0) {
     // if we have a 3-way collision or more, recurse with smaller values.
     if ((collide[i] && collide[i-1] || collide[i] && collide[i+1])
         // if we exceed recursion depth, assume they are simultaneous
-        && depth < MAX_RECURSION_DEPTH) {
+        && depth < MAX_RECURSION_DEPTH) 
+    {
       simulate_dots(elapsed / 2.0, depth + 1);
       simulate_dots(elapsed / 2.0, depth + 1);
       return;
@@ -133,8 +134,8 @@ void simulate_dots(float elapsed, int depth=0) {
 
       // if there is a collision with the left neighbor too, this dot is
       // sandwiched, so nothing happens to it yet.
-      if (collide[i]) {
-        continue;
+      if (collide[i] && i > 0) {
+          continue;
       }
 
       if (i + 1 == num_dots) { // hit the right wall
@@ -142,81 +143,83 @@ void simulate_dots(float elapsed, int depth=0) {
         new_pos[num_dots-1] += 2 * 
             (RIGHT - (new_pos[num_dots-1] + dots[num_dots-1].radius));
         continue;
-      } else {
-        // if this is the leftmost ball in a chain, solve the chain too.
-        float total_mass = dots[i].mass;
-        float total_momentum = dots[i].mass * dots[i].velocity;
-        float total_energy = total_momentum * dots[i].velocity;
-        
-        float overlap;
-        float left_overlap;
-        float max_overlap_t = 0;
-        int j = i;
-
-        // sum up mass + velocity
-        while (j+1 < num_dots && collide[j+1]) {
-          j++;
-          total_mass += dots[j].mass;
-          total_momentum += dots[j].mass * dots[j].velocity;
-          total_energy += dots[j].mass * dots[j].velocity ** 2;
-
-          // find the earliest time that two balls began to overlap
-          overlap = ((dots[j-1].position + dots[j-1].radius) - 
-                (dots[j].position - dots[j].radius));
-          left_overlap = overlap * dots[j-1].velocity / 
-                (dots[j-1].velocity - dots[j].velocity);
-
-          // now find how much time has elapsed since the collision
-          max_overlap_t = max(longest_overlap, left_overlap / dots[j-1].velocity);
-        }
-
-        // this is the velocity of the whole system's center of mass,
-        // post-collision
-        float cm_velocity = total_momentum / total_mass;
-
-        // if the chain includes the right wall, invert momentum
-        if (j+1 == num_dots && collide[num_dots]) {
-          j++;
-          overlap = (RIGHT - (new_pos[num_dots-1] + dots[num_dots-1].radius));
-          max_overlap_t = max(longest_overlap, overlap / dots[num_dots-1].velocity);
-          cm_velocity *= -1;
-        }
-
-        // all dots have their positions adjusted back to the point of earliest
-        // collision. dots in the middle of the chain all get the same velocity
-        // as the center of mass
-        for (int k = i; k < j; k++) {
-          new_vel[k] = cm_velocity;
-          new_color_val[k] += COLOR_INCR;
-          new_pos[k] -= max_overlap_t * dots[k].velocity;
-        }
-
-        // handle this case special to deal with colliding on the wall
-        if (j < num_dots) {
-          new_pos[j] -= max_overlap_t * dots[j].velocity;
-        }
-        
-        // the collision acts as if the dots in the middle lost all their
-        // energy, and the two on the outside bounce off each other.
-        new_vel[i] = cm_velocity + 
-                    2 * dots[j].mass * (dots[j].velocity - cm_velocity) / cm +
-                    (dm * (dots[i].velocity - cm_velocity)) / cm;
-
-        new_pos[k] += (elapsed - ovl_t) * new_vel[k];
       }
 
-      // figure out where the left dot was when it collided
-      float overlap = ((dots[i].position + dots[i].radius) - 
-            (dots[i+1].position - dots[i+1].radius));
-      float left_overlap = overlap * dots[i].velocity / 
-            (dots[i].velocity - dots[i+1].velocity);
-      new_pos[i] -= left_overlap;
+      // if this is the leftmost ball in a chain, solve the chain too.
+      float total_mass = dots[i].mass;
+      float total_momentum = dots[i].mass * dots[i].velocity;
+      float total_energy = total_momentum * dots[i].velocity;
+      
+      float overlap;
+      float left_overlap;
+      float max_overlap_t = 0;
+      int j = i;
 
-      // now find how much time has elapsed since the collision, and apply the
-      // new velocity for that long
-      float ovl_t = left_overlap / dots[i].velocity;
+      // sum up mass + velocity
+      while (j+1 < num_dots && collide[j+1]) {
+        j++;
+        total_mass += dots[j].mass;
+        total_momentum += dots[j].mass * dots[j].velocity;
+        total_energy += dots[j].mass * dots[j].velocity ** 2;
 
-    } else if (collide[i]) { // bounce the ball on the right (b2)
+        // find the earliest time that two balls began to overlap
+        overlap = ((dots[j-1].position + dots[j-1].radius) - 
+              (dots[j].position - dots[j].radius));
+        left_overlap = overlap * dots[j-1].velocity / 
+              (dots[j-1].velocity - dots[j].velocity);
+
+        // now find how much time has elapsed since the collision
+        max_overlap_t = max(longest_overlap, left_overlap / dots[j-1].velocity);
+      }
+
+      // this is the velocity of the whole system's center of mass,
+      // post-collision
+      float cm_velocity = total_momentum / total_mass;
+
+      // if the chain includes a wall, invert momentum
+      if (j+1 == num_dots && collide[num_dots]) { // right wall
+        j++;
+        overlap = (RIGHT - (new_pos[num_dots-1] + dots[num_dots-1].radius));
+        max_overlap_t = max(longest_overlap, overlap / dots[num_dots-1].velocity);
+        cm_velocity *= -1;
+      } else if (i == 0 && collide[i]) { // left wall
+        overlap = LEFT - (new_pos[0] - dots[0].radius);
+        max_overlap_t = max(longest_overlap, overlap / dots[0].velocity);
+        cm_velocity *= -1;
+      }
+
+      // all dots have their positions adjusted back to the point of earliest
+      // collision. dots in the middle of the chain all get the same velocity
+      // as the center of mass
+      for (int k = i; k < j; k++) {
+        new_vel[k] = cm_velocity;
+        new_color_val[k] += COLOR_INCR;
+        new_pos[k] -= max_overlap_t * dots[k].velocity;
+      }
+
+      // handle this case special to deal with colliding on the wall
+      if (j < num_dots) {
+        new_pos[j] -= max_overlap_t * dots[j].velocity;
+      }
+      
+      // the collision acts as if the dots in the middle lost all their
+      // energy, and the two on the outside bounce off each other.
+      new_vel[i] = cm_velocity + 
+                  2 * dots[j].mass * (dots[j].velocity - cm_velocity) / cm +
+                  (dm * (dots[i].velocity - cm_velocity)) / cm;
+
+      new_vel[j] = cm_velocity + 
+                  2 * dots[j].mass * (dots[j].velocity - cm_velocity) / cm +
+                  (dm * (dots[i].velocity - cm_velocity)) / cm;
+
+      // loop past all the things that are colliding
+      for ( ; i <= j; i++) {
+        new_pos[i] += (elapsed - max_overlap_t) * new_vel[i];
+      }
+    }
+
+    /*
+    if (collide[i]) { // bounce the ball on the right (b2)
       Serial.print("collide right:");
       Serial.println(i);
       
@@ -250,6 +253,7 @@ void simulate_dots(float elapsed, int depth=0) {
       // increment brightness
       new_color_val[i] += COLOR_INCR;
     }
+    */
   }
 
   // do final update of positions & velocities
