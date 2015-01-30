@@ -30,7 +30,7 @@ void setup()
 {
   Serial.begin(9600);
   delay(1000);
-   AudioMemory(24);
+  AudioMemory(24);
   //fft1024_1.windowFunction(AudioWindowHanning1024);
   //fft1024_2.windowFunction(AudioWindowHanning1024);
   leds.begin();
@@ -43,16 +43,11 @@ int num_frames = 0;
 void loop() {
   if (first) {
     first = false;
-    elapsed_millis = 0;
     make_colors();
     make_dots();
-    //Serial.println(dots[0].position);
   }
- 
-  //Serial.println(dots[0].velocity);
-  // physics simulating
-  Serial.println("b");
-  simulate_dots((float)elapsed_millis / 1000.0);
+
+  simulate_dots((float)elapsed_millis / 1000.0, 0);
   elapsed_millis = 0;
   time_since_draw -= DRAW_FRAME_TIME;
 

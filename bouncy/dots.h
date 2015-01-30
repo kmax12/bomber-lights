@@ -23,16 +23,16 @@
 #define RANDOM(X, Y) (rand() * ((Y) - (X)) + (X))
 
 #define LEFT 0
-#define RIGHT TOTAL_LEDS
+#define RIGHT (TOTAL_LEDS - 1)
 #define WALL 1
 
 // macro to increase color value whenever there's a collision
 #define COLOR_INCR 0.5
-#define COLOR_DECAY 8
+#define COLOR_DECAY 0
 
 // the maximum number of recursions on simulate_dots to handle simultaneous
 // collisions
-#define MAX_RECURSE_DEPTH 10
+#define MAX_RECURSION_DEPTH 10
 
 // dot class 
 class dot {
@@ -66,7 +66,7 @@ extern bool collide[];
 
 void make_dots();
 
-void simulate_dots(float elapsed);
+void simulate_dots(float elapsed, int depth);
 
 void draw_dots(int* led);
 
