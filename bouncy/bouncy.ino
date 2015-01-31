@@ -43,6 +43,7 @@ int num_frames = 0;
 void loop() {
   if (first) {
     first = false;
+    elapsed_millis = 0;
     make_colors();
     make_dots();
   }

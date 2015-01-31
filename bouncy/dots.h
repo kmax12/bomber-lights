@@ -32,7 +32,10 @@
 
 // the maximum number of recursions on simulate_dots to handle simultaneous
 // collisions
-#define MAX_RECURSION_DEPTH 10
+#define MAX_RECURSION_DEPTH 4
+
+// events that happen within this amount of time are assumed to be simultaneous
+#define TIME_GRANULARITY 0.0001
 
 // dot class 
 class dot {
