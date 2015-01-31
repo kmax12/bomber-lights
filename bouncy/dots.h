@@ -47,6 +47,7 @@ public:
   float radius;
   int color_ind;
   float color_val;
+  bool dead;
 
   // constructor prototypes
   dot();
