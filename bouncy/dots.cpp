@@ -59,23 +59,23 @@ void make_dots() {
 
   // dot(position, velocity, mass, radius, color);
   dots[0] = dot(10.0, -10.0, 7.0, 0.5, 100);
-  dots[1] = dot(20.0, 5.0, 1.0, 0.5, 50);
-  dots[2] = dot(30.0, -0.0, 3.0, 0.5, 130);
-  dots[3] = dot(45.0, -1.0, 6.0, 0.5, 170);  
-  dots[4] = dot(50.0, 10.0, 5.0, 0.5, 20);
-  dots[5] = dot(55.0, 5.0, 2.0, 0.5, 80);
+  dots[1] = dot(20.0, 20.0, 1.0, 0.5, 50);
+  dots[2] = dot(30.0, 8.0, 3.0, 0.5, 130);
+  dots[3] = dot(40.0, -3.0, 5.0, 0.5, 20);
+  dots[4] = dot(50.0, 4.0, 2.0, 0.5, 80);
+  dots[5] = dot(55.0, -12.0, 6.0, 0.5, 170);
 
-  num_dots = 6;
+  num_dots = 5;
 
   /*
   // create dots with random values
-   for (int i = 0; i < num_dots; i++) {
-   dots[i] = dot();
-   }
+  for (int i = 0; i < num_dots; i++) {
+    dots[i] = dot();
+  }
    
-   // sort the array so we can do collisions properly
-   std::sort(dots, dots+num_dots, cmpfunc);
-   */
+  // sort the array so we can do collisions properly
+  std::sort(dots, dots+num_dots, cmpfunc);
+  */
 
   // initialize collide array to falses
   for (int i = 0; i < MAX_DOTS; i++){
@@ -100,7 +100,7 @@ void simulate_dots(float elapsed, int depth=0) {
 
     // update position and color_val for now
     new_pos[i] += dots[i].velocity * elapsed;
-    new_color_val[i] = dots[i].color_val * std::pow(M_E, -COLOR_DECAY * elapsed);
+    new_color_val[i] *= std::pow(M_E, -COLOR_DECAY * elapsed);
   }
 
   // check for collisions with walls, and adjust position/velocity accordingly
@@ -119,7 +119,7 @@ void simulate_dots(float elapsed, int depth=0) {
       Serial.print("Recursing, depth: ");
       Serial.println(depth + 1);
       simulate_dots(elapsed, depth + 1);
-      return;
+      return; 
     }
   }
 
@@ -130,6 +130,7 @@ void simulate_dots(float elapsed, int depth=0) {
       new_vel[num_dots-1] *= -1;
       new_pos[num_dots-1] += 2 * 
         (RIGHT - (new_pos[num_dots-1] + dots[num_dots-1].radius));
+      new_color_val[num_dots-1] += COLOR_INCR;
       continue;
     }
 
@@ -242,29 +243,41 @@ void simulate_dots(float elapsed, int depth=0) {
 }
 
 // render dots to the strip as an array of color values
-void draw_dots(int* leds) {
-  int color;
+void draw_dots(int* leds, int color) {
   int pixel;
   float pos_rem;
   int i;
 
   // reset strip
-  for (i = 0; i < LEDS_PER_STRIP; i++) {    
+  for (i = 0; i < TOTAL_LEDS; i++) {    
     leds[i] = 0;
   } 
   
   // render dots
   for (i = 0; i < num_dots; i++) {
-    color = rainbow_colors[dots[i].color_ind];
     pixel = (int) dots[i].position;
     pos_rem = dots[i].position - pixel;
-    leds[pixel] = blend_color(leds[pixel], dim_color(color, dots[i].color_val * pow((1-pos_rem), 2)));
+    float brightness;
+    
+    /*
+    for (int pixel = (int)explosions[i] - 2; pixel <= (int)explosions[i] + 3; pixel++) {
+      brightness = max(1 - abs(dots[i].position - pixel) / 3.0, 0);
+      leds[pixel] = blend_color(leds[pixel], dim_color(color, pow(brightness, 2)));
+    }
+    */
+    
+    // make the color the opposite end of the spectrum from the background
+    float band = (float)(pixel * NUM_BANDS) / TOTAL_LEDS;
+    int band_color = rainbow_colors[(int)(color + band * 20 + NUM_COLORS / 2) % NUM_COLORS]; 
+    
+    leds[pixel] = blend_color(leds[pixel], dim_color(band_color, dots[i].color_val * pow((1-pos_rem), 2)));
     if (pixel < RIGHT) {
-      leds[pixel+1] = blend_color(leds[pixel+1], dim_color(color, dots[i].color_val * pow(pos_rem, 2)));
+      leds[pixel+1] = blend_color(leds[pixel+1], dim_color(band_color, dots[i].color_val * pow(pos_rem, 2)));
     }
   } 
   
   // render explosions
+  /*
   i = 0;
   while (explosions[i] > 0) {
     float brightness;
@@ -274,5 +287,11 @@ void draw_dots(int* leds) {
     }
     explosions[i] = -1;
     i++;
+  }
+  */
+  
+  if (explosions[0] > 0) {
+    set_color(255, 255, 255, true);
+    make_dots();
   }
 }

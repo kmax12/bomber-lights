@@ -1,15 +1,15 @@
 #include "colors.h"
 
 // 180 pretty bright colors
-int rainbow_colors[180];
+int rainbow_colors[NUM_COLORS];
 
 // generate rainbow colors
 void make_colors() {
-   for (int i = 0; i < 180; i++) {
+   for (int i = 0; i < NUM_COLORS; i++) {
     int hue = i * 2;
     int saturation = 100;
     int lightness = 50;
-    // pre-compute the 180 rainbow colors
+    // pre-compute the NUM_COLORS rainbow colors
     rainbow_colors[i] = make_color(hue, saturation, lightness);
   }
 }

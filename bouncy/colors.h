@@ -3,6 +3,8 @@
 
 #include "Arduino.h"
 
+#define NUM_COLORS 180
+
 extern int rainbow_colors[];
 
 void make_colors();

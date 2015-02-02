@@ -7,27 +7,50 @@
 
 AudioInputAnalog         adc1(A4);           //xy=185,156
 //AudioInputAnalog         adc2(A5);           //xy=203,271
-AudioAnalyzeFFT1024      fft1024_1;      //xy=376,162
+AudioAnalyzeFFT1024      fft1;      //xy=376,162
 //AudioAnalyzeFFT1024      fft1024_2;      //xy=409,279
-AudioConnection          patchCord1(adc1, fft1024_1);
+AudioConnection          patchCord1(adc1, fft1);
 //AudioConnection          patchCord2(adc2, fft1024_2);
 
 
-const int ledsPerStrip = 60;
-DMAMEM int displayMemory[ledsPerStrip*6];
-int drawingMemory[ledsPerStrip*6];
+#define LEDS_PER_STRIP 107
+#define NUM_STRIPS 8
+#define TOTAL_LEDS (LEDS_PER_STRIP * NUM_STRIPS)
+
+DMAMEM int displayMemory[TOTAL_LEDS*6];
+int drawingMemory[TOTAL_LEDS*6];
 const int config = WS2811_GRB | WS2811_800kHz;
-OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
+OctoWS2811 leds(TOTAL_LEDS, displayMemory, drawingMemory, config);
 
 elapsedMillis reset;
+elapsedMillis frame_millis;
 
 int rainbowColors[180];
+int led_location[TOTAL_LEDS];
 
 void setup()
 {
   Serial.begin(9600);
   
-  for (int i=0; i<180; i++) {
+  /*
+  int led;
+  int base = 0;
+  while (base < TOTAL_LEDS) {
+    if (i & 2 == 1) {
+      for (led = 0; led < LEDS_PER_STRIP; led++) {
+        led_location[base + led] = base + LEDS_PER_STRIP - (led + 1);
+      }
+    } else {
+      for (led = 0; led < LEDS_PER_STRIP; led++) {
+        led_location[base + led] = base + led;
+      }
+    }
+    
+    base += LEDS_PER_STRIP;
+  }
+  */
+    
+  for (int i = 0; i < 180; i++) {
     int hue = i * 2;
     int saturation = 100;
     int lightness = 50;
@@ -36,12 +59,13 @@ void setup()
   }
   
   AudioMemory(24);
-  fft1024_1.windowFunction(AudioWindowHanning1024);
+  fft1.windowFunction(AudioWindowHanning1024);
   //fft1024_2.windowFunction(AudioWindowHanning1024);
   leds.begin();
 }
 
 int a = 0;
+int num_frames = 0;
 int colorInd = 0;
 int color = rainbowColors[colorInd];
 
@@ -53,43 +77,18 @@ void loop()
   int i;
   int c;
   
-  if(reset > 10)
-  {
-    reset = reset - 10;
-
-    a++;
-  }
-  if(a >= 60)
-  {
-    a = 0;
-    color = rainbowColors[colorInd];
-    colorInd += 10;
-    if(colorInd > 180){
-      colorInd = 0;
-    }
-  }
-  
-
+  a++;
+  a = a % TOTAL_LEDS;
 
   /*
-  Serial.print(a);
-   Serial.print(" ");
-   Serial.print(b);
-   Serial.print(" ");
-   Serial.print(c);
-   Serial.println();
-   */
-
-  if(fft1024_1.available())
-    //if(!leds.busy())
-  {
+  if(fft1.available() && !leds.busy()) {
     // each time new FFT data is available
     // print it all to the Arduino Serial Monitor
-    for (i=0; i<60; i++) {      
-      l = fft1024_1.read(i) * 1000;
+    for (i = 0; i < TOTAL_LEDS; i++) { // Why was 60 here?
+      // l = fft1.read(i) * 1000;
       //r = fft1024_2.read(i) * 1000;
       //n = random(0, 255);
-      map(l, 0, 150, 0, 255);
+      // map(l, 0, 150, 0, 255);
       //map(r, 0, 150, 0, 255);
       //Serial.print("a");
       //Serial.print(i);
@@ -123,16 +122,33 @@ void loop()
        leds.setPixel(i, rainbowColors[c]);
        */
        
-      leds.setPixel(i, 0, 0, l);
-    }
+      //leds.setPixel(i, 0, 0, rainbowColors[100]);
+    //}
 
+  //}
+
+
+  for (int i = 0; i < TOTAL_LEDS; i++) {
+    leds.setPixel(i, 0);
   }
+  
+  leds.setPixel(a, rainbowColors[0]);
 
   if(!leds.busy()){
     leds.show();
   }
-
-
+  
+  // framerate tracking
+  num_frames += 1;
+  if (frame_millis > 1000){
+    Serial.print("fps");
+    Serial.println((float)num_frames/frame_millis*1000);
+    num_frames = 0;
+    frame_millis = 0;
+  }
+  
+  // sleep 10 ms
+  delay(10);
 }
 
 
