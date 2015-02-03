@@ -13,13 +13,17 @@ AudioAnalyzeFFT256      fft1;      //xy=376,162
 //AudioAnalyzeFFT1024      fft1024_2;      //xy=409,279
 AudioConnection          patchCord1(adc1, fft1);
 //AudioConnection          patchCord2(adc2, fft1024_2);
+ 
+// TOTAL_LEDS = 1336
+// 1336 * 4 * 2 * 6 = 10688B
+DMAMEM int display_memory[LEDS_PER_STRIP * 6];
+int drawing_memory[LEDS_PER_STRIP * 6];
 
-DMAMEM int display_memory[TOTAL_LEDS*6];
-int drawing_memory[TOTAL_LEDS*6];
 const int config = WS2811_GRB | WS2811_800kHz;
-OctoWS2811 leds(TOTAL_LEDS, display_memory, drawing_memory, config);
+OctoWS2811 leds(LEDS_PER_STRIP, display_memory, drawing_memory, config);
 
 elapsedMillis elapsed_millis;
+
 int led_buffer[TOTAL_LEDS];
 
 elapsedMillis frame_millis;
@@ -30,8 +34,18 @@ bool first = true;
 int led_location(int i) {
   int strip = i / LEDS_PER_STRIP;
   int base = strip * LEDS_PER_STRIP;
-  if (strip % 2 == 1) {
-    return base + LEDS_PER_STRIP - (i + 1);
+  
+  if (strip == 0) {
+    i += LEDS_PER_STRIP;
+    base = LEDS_PER_STRIP;
+    return base + (base + LEDS_PER_STRIP - i + 1);
+  } else if (strip == 1) {
+    i -= LEDS_PER_STRIP;
+    return i;
+  }
+  
+  if (strip % 2 == 0) {
+    return base + (base + LEDS_PER_STRIP - i + 1);
   } else {
     return i;
   }
@@ -85,8 +99,11 @@ void loop() {
     
     // background pulsing, divided into five bands
     int band = (i * NUM_BANDS) / TOTAL_LEDS;
+    
+    /*
     int band_color = (color + band * 20) % NUM_COLORS; 
     led_buffer[i] = blend_color(led_buffer[i], dim_color(rainbow_colors[band_color], intensity[band]));
+    */
     
     leds.setPixel(led_location(i), led_buffer[i]);
     last_buffer[i] = dim_color(led_buffer[i], .9);

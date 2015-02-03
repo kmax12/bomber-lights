@@ -1,8 +1,8 @@
 #ifndef BOUNCY_H
 #define BOUNCY_H
 
-#define LEDS_PER_STRIP 60
-#define NUM_STRIPS 1
+#define LEDS_PER_STRIP 167
+#define NUM_STRIPS 8
 #define TOTAL_LEDS (LEDS_PER_STRIP * NUM_STRIPS)
 #define NUM_BANDS 5
 

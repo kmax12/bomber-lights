@@ -7,9 +7,13 @@ dot dots[MAX_DOTS];
 float explosions[MAX_DOTS];
 int frame = 0;
 
+unsigned long newrandom(unsigned long howsmall, unsigned long howbig) {
+ return howsmall + random() % (howbig - howsmall);
+}
+
 // quick function to return -1 or 1
 static inline int random_sign() {
-  if (random(2) > 1) {
+  if (newrandom(0,2) >= 1) {
     return 1;
   } else {
     return -1;
@@ -19,6 +23,7 @@ static inline int random_sign() {
 // dot constructors
 dot::dot() {
   position = random(LEFT, RIGHT);
+  last_pos = position;
   velocity = random(MIN_VEL, MAX_VEL) * random_sign();
   mass = random(MIN_MASS, MAX_MASS);
   radius = random(MIN_RAD, MAX_RAD);
@@ -29,6 +34,7 @@ dot::dot() {
 
 dot::dot(float p, float v, float m, float r) {
   position = p;
+  last_pos = p;
   velocity = v;
   mass = m;
   radius = r;
@@ -39,6 +45,7 @@ dot::dot(float p, float v, float m, float r) {
 
 dot::dot(float p, float v, float m, float r, int c) {
   position = p;
+  last_pos = p;
   velocity = v;
   mass = m;
   radius = r;
@@ -55,17 +62,30 @@ bool cmpfunc (const dot& a, const dot& b) {
 // initial setup
 void make_dots() {
   // seed arduino rng
-  //randomSeed(analogRead(0));
-
+  randomSeed(17);
+  
+  int r = random();
+  Serial.println(r);
+  num_dots = 5;
+  
   // dot(position, velocity, mass, radius, color);
-  dots[0] = dot(10.0, -10.0, 7.0, 0.5, 100);
+  for (int i = 0; i < num_dots; i++) {
+    dots[i] = dot((i+1) * TOTAL_LEDS / num_dots - LEDS_PER_STRIP / 2, 
+                  (float)newrandom(MIN_VEL, MAX_VEL) * random_sign(), 
+                  (float)newrandom(MIN_MASS, MAX_MASS), 
+                  0.5, 
+                  i * 30);
+    Serial.println(dots[i].velocity);    Serial.println(dots[i].position);
+  }
+  
+    /*
+  dots[0] = dot(10.0, 100.0, 7.0, 0.5, 100);
   dots[1] = dot(20.0, 20.0, 1.0, 0.5, 50);
   dots[2] = dot(30.0, 8.0, 3.0, 0.5, 130);
   dots[3] = dot(40.0, -3.0, 5.0, 0.5, 20);
   dots[4] = dot(50.0, 4.0, 2.0, 0.5, 80);
   dots[5] = dot(55.0, -12.0, 6.0, 0.5, 170);
-
-  num_dots = 5;
+  */
 
   /*
   // create dots with random values
@@ -93,6 +113,7 @@ void simulate_dots(float elapsed, int depth=0) {
   // make a tentative update of each dot
   for (int i = 0; i < num_dots; i++) {
     // copy old values into new_* arrays
+    dots[i].last_pos = dots[i].position;
     new_pos[i] = dots[i].position;
     new_vel[i] = dots[i].velocity;
     new_color_val[i] = dots[i].color_val;
@@ -244,8 +265,7 @@ void simulate_dots(float elapsed, int depth=0) {
 
 // render dots to the strip as an array of color values
 void draw_dots(int* leds, int color) {
-  int pixel;
-  float pos_rem;
+  float left, right;
   int i;
 
   // reset strip
@@ -255,8 +275,8 @@ void draw_dots(int* leds, int color) {
   
   // render dots
   for (i = 0; i < num_dots; i++) {
-    pixel = (int) dots[i].position;
-    pos_rem = dots[i].position - pixel;
+    left =  min(dots[i].position, dots[i].last_pos);
+    right = max(dots[i].position, dots[i].last_pos);
     float brightness;
     
     /*
@@ -267,12 +287,19 @@ void draw_dots(int* leds, int color) {
     */
     
     // make the color the opposite end of the spectrum from the background
-    float band = (float)(pixel * NUM_BANDS) / TOTAL_LEDS;
-    int band_color = rainbow_colors[(int)(color + band * 20 + NUM_COLORS / 2) % NUM_COLORS]; 
+    /*
+    float band = (float)(dots[i].position * NUM_BANDS) / TOTAL_LEDS;
+    int band_color = rainbow_colors[(int)(color + band * 20 + NUM_COLORS / 2) % NUM_COLORS];
+    */
+    int band_color = 0x00FFFFFF;
     
-    leds[pixel] = blend_color(leds[pixel], dim_color(band_color, dots[i].color_val * pow((1-pos_rem), 2)));
-    if (pixel < RIGHT) {
-      leds[pixel+1] = blend_color(leds[pixel+1], dim_color(band_color, dots[i].color_val * pow(pos_rem, 2)));
+    leds[(int)left] = blend_color(leds[(int)left], dim_color(band_color, dots[i].color_val * pow(((int)left - left), 2)));
+    for (int p = (int)left + 1; p <= (int)right; p++) {
+      leds[p] = blend_color(leds[p], dim_color(band_color, dots[i].color_val));
+    }
+    
+    if ((int)right + 1 < RIGHT) {
+      leds[(int)right+1] = blend_color(leds[(int)right+1], dim_color(band_color, dots[i].color_val * pow(right - (int)right, 2)));
     }
   } 
   

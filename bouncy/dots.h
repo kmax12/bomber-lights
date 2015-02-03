@@ -13,12 +13,12 @@
 #define MAX_DOTS 6
 #define NUM_COLORS 180
 
-#define MIN_VEL 5
-#define MAX_VEL 20
+#define MIN_VEL 30
+#define MAX_VEL 100
 #define MIN_MASS 2
 #define MAX_MASS 10
-#define MIN_RAD 2
-#define MAX_RAD 2
+#define MIN_RAD 0.5
+#define MAX_RAD 0.5
 
 #define RANDOM(X, Y) (rand() * ((Y) - (X)) + (X))
 
@@ -28,7 +28,7 @@
 
 // macro to increase color value whenever there's a collision
 #define COLOR_INCR 1
-#define COLOR_DECAY 2
+#define COLOR_DECAY 0
 #define VELOCITY_DECAY 0
 
 // the maximum number of recursions on simulate_dots to handle simultaneous
@@ -40,6 +40,7 @@ class dot {
 public:
 
   float position;
+  float last_pos;
   float velocity;
   float mass;
   float radius;
