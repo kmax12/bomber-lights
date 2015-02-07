@@ -100,10 +100,10 @@ void loop() {
     // background pulsing, divided into five bands
     int band = (i * NUM_BANDS) / TOTAL_LEDS;
     
-    /*
+    //* do rainbow colors
     int band_color = (color + band * 20) % NUM_COLORS; 
     led_buffer[i] = blend_color(led_buffer[i], dim_color(rainbow_colors[band_color], intensity[band]));
-    */
+    //*/
     
     leds.setPixel(led_location(i), led_buffer[i]);
     last_buffer[i] = dim_color(led_buffer[i], .9);

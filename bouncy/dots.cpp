@@ -287,11 +287,13 @@ void draw_dots(int* leds, int color) {
     */
     
     // make the color the opposite end of the spectrum from the background
-    /*
+    //*
     float band = (float)(dots[i].position * NUM_BANDS) / TOTAL_LEDS;
     int band_color = rainbow_colors[(int)(color + band * 20 + NUM_COLORS / 2) % NUM_COLORS];
-    */
-    int band_color = 0x00FFFFFF;
+    //*/
+    
+    // do straight white
+    //int band_color = 0x00FFFFFF;
     
     leds[(int)left] = blend_color(leds[(int)left], dim_color(band_color, dots[i].color_val * pow(((int)left - left), 2)));
     for (int p = (int)left + 1; p <= (int)right; p++) {
