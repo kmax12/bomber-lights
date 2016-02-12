@@ -1,14 +1,66 @@
+#!/usr/bin/env python3
+
+"""Create a JACK client that copies input audio directly to the outputs.
+
+This is somewhat modeled after the "thru_client.c" example of JACK 2:
+http://github.com/jackaudio/jack2/blob/master/example-clients/thru_client.c
+
+If you have a microphone and loudspeakers connected, this might cause an
+acoustical feedback!
+
+"""
+import sys
+import signal
+import os
 import jack
 import threading
 
-client = jack.Client('FloungeClient')
-inp = client.inports.register('input')
+if sys.version_info < (3, 0):
+    # In Python 2.x, event.wait() cannot be interrupted with Ctrl+C.
+    # Therefore, we disable the whole KeyboardInterrupt mechanism.
+    # This will not close the JACK client properly, but at least we can
+    # use Ctrl+C.
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+else:
+    # If you use Python 3.x, everything is fine.
+    pass
+
+argv = iter(sys.argv)
+# By default, use script name without extension as client name:
+defaultclientname = os.path.splitext(os.path.basename(next(argv)))[0]
+clientname = next(argv, defaultclientname)
+servername = next(argv, None)
+
+client = jack.Client(clientname, servername=servername)
+
+if client.status.server_started:
+    print("JACK server started")
+if client.status.name_not_unique:
+    print("unique name {0!r} assigned".format(client.name))
+
 event = threading.Event()
-num_bufs = 0
+
 
 @client.set_process_callback
 def process(frames):
-    buf = client.inports[0].get_buffer()
+    assert len(client.inports) == len(client.outports)
+    assert frames == client.blocksize
+    for i, o in zip(client.inports, client.outports):
+        o.get_buffer()[:] = i.get_buffer()
+
+
+@client.set_shutdown_callback
+def shutdown(status, reason):
+    print("JACK shutdown!")
+    print("status:", status)
+    print("reason:", reason)
+    event.set()
+
+
+# create two port pairs
+for number in 1, 2:
+    client.inports.register("input_{0}".format(number))
+    client.outports.register("output_{0}".format(number))
 
 with client:
     # When entering this with-statement, client.activate() is called.
@@ -40,3 +92,7 @@ with client:
         event.wait()
     except KeyboardInterrupt:
         print("\nInterrupted by user")
+
+# When the above with-statement is left (either because the end of the
+# code block is reached, or because an exception was raised inside),
+# client.deactivate() and client.close() are called automatically.

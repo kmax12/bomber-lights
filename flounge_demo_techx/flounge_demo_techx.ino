@@ -43,6 +43,7 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
+#include <SerialFlash.h>
 #include <OctoWS2811.h>
 
 #define LEDS_PER_STRIP 167

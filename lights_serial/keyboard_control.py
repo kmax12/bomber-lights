@@ -5,12 +5,10 @@ import serial
 import sys
 import time
 import traceback
+from serial_consts import *
 
-LEDS_PER_STRIP = 167
-NUM_STRIPS = 8
-TOTAL_LEDS = (LEDS_PER_STRIP * NUM_STRIPS)
-BAUD = 115200
 FRAMERATE = 30
+DECAY = 0.9
 
 def zip_sum(l1, l2):
     assert(len(l1) == len(l2))
@@ -18,14 +16,15 @@ def zip_sum(l1, l2):
         l1[i] += l2[i]
 
 class PulseController(object):
-    def __init__(self, pad_row):
-        self.key_row = '12345'
-        self.key_map = {ord(c): i * TOTAL_LEDS / len(self.key_row) for i, c in
-                        enumerate(list(self.key_row))}
+    def __init__(self, key_row, pad_row):
+        self.key_row = key_row
 
         # each pulse is represented as an intensity and a color
         self.pulses = [[0, [0,0,0]]] * len(self.key_row)
         self.pulse_rad = TOTAL_LEDS / (len(self.key_row) * 2)
+        self.key_map = {
+            ord(c): i * TOTAL_LEDS / len(self.key_row) + self.pulse_rad
+            for i, c in enumerate(list(self.key_row))}
         self.pad_row = pad_row
 
     def process_input(self, key):
@@ -40,11 +39,11 @@ class PulseController(object):
         for idx, pulse in enumerate(self.pulses):
             fade = (1.0 / self.pulse_rad) * pulse[0]
             color = pulse[1]
-            pulse[0] *= 0.9     # exponential pulse intensity fade
+            pulse[0] *= DECAY     # exponential pulse intensity fade
             led_idx = self.key_map[ord(self.key_row[idx])]
             for i in range(self.pulse_rad):
                 li = led_idx + i - self.pulse_rad
-                if li <= 0:
+                if li < 0:
                     break
                 zip_sum(leds[li], [elt * fade * i for elt in color])
 
@@ -61,6 +60,14 @@ class PulseController(object):
             except:
                 pass
 
+
+class TetOffensiveController(PulseController):
+    def process_input(self, key):
+        # Override default behavior to just epilepsy the shit out of the flounge
+        if random.random() < 0.5:
+            idx = int(random.random() * 4.0)
+            color = [1, 1, 1]
+            self.pulses[idx] = [0.99, color]
 
 class Controller(object):
     def __init__(self, pad_row):
@@ -85,7 +92,7 @@ class Controller(object):
         for idx, pulse in enumerate(self.pulses):
             fade = (1.0 / self.pulse_rad) * pulse[0]
             color = pulse[1]
-            pulse[0] *= 0.9     # exponential pulse intensity fade
+            pulse[0] *= DECAY     # exponential pulse intensity fade
             led_idx = self.key_map[ord(self.key_row[idx])]
             for i in range(self.pulse_rad):
                 li = led_idx + i - self.pulse_rad
@@ -121,7 +128,7 @@ def main(stdscr):
     stdscr.nodelay(1)
 
     # Open serial port connection
-    s = serial.Serial('/dev/ttyACM0', BAUD, timeout=1)
+    s = serial.Serial(SERIAL_ADDR, BAUD, timeout=1)
     try:
         s.open()
     except:
@@ -130,7 +137,7 @@ def main(stdscr):
 
     # Initialize light controllers
     controllers = []
-    controllers.append(PulseController(0))
+    controllers.append(PulseController('asdf', 0))
 
     # initialize pad with (rows, columns)
     rows = len(controllers)
